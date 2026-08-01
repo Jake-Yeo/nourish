@@ -1,0 +1,15 @@
+{
+  "name": "Nourish · AI Meal Estimator",
+  "short_name": "Nourish",
+  "description": "Photograph meals, estimate macros, and track nutrition.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f4f7f4",
+  "theme_color": "#23795e",
+  "orientation": "portrait-primary",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
