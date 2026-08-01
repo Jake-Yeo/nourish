@@ -18,6 +18,11 @@ dist-ssr
 # Private nutrition exports downloaded during MyNetDiary sync
 /data/mynetdiary/
 
+# Persistent local application database
+/data/*.sqlite
+/data/*.sqlite-shm
+/data/*.sqlite-wal
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

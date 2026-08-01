@@ -8,6 +8,7 @@ import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
 import XLSX from 'xlsx'
 import { chromium } from 'playwright-core'
+import { DatabaseSync } from 'node:sqlite'
 
 if (process.env.NOURISH_ENV_FILE) dotenv.config({ path: process.env.NOURISH_ENV_FILE, quiet: true })
 
@@ -22,6 +23,47 @@ const headlessShellPath = chromium.executablePath().replace(
   /\/chromium-(\d+)\/.*$/,
   '/chromium_headless_shell-$1/chrome-headless-shell-mac-arm64/chrome-headless-shell',
 )
+
+const databaseDirectory = path.join(root, 'data')
+await fs.mkdir(databaseDirectory, { recursive: true })
+const database = new DatabaseSync(process.env.NOURISH_DATABASE_PATH || path.join(databaseDirectory, 'nourish.sqlite'))
+database.exec(`
+  PRAGMA journal_mode = WAL;
+  PRAGMA synchronous = FULL;
+  CREATE TABLE IF NOT EXISTS app_state (
+    id INTEGER PRIMARY KEY CHECK (id = 1),
+    data TEXT NOT NULL,
+    revision INTEGER NOT NULL DEFAULT 1,
+    updated_at INTEGER NOT NULL
+  );
+`)
+
+const readAppState = () => {
+  const row = database.prepare('SELECT data, revision FROM app_state WHERE id = 1').get()
+  return row ? { data: JSON.parse(row.data), revision: Number(row.revision) } : null
+}
+
+const writeAppState = data => {
+  const serialized = JSON.stringify(data)
+  database.prepare(`
+    INSERT INTO app_state (id, data, revision, updated_at) VALUES (1, ?, 1, ?)
+    ON CONFLICT(id) DO UPDATE SET data = excluded.data, revision = app_state.revision + 1, updated_at = excluded.updated_at
+  `).run(serialized, Date.now())
+  return readAppState()
+}
+
+const validAppData = value => value && typeof value === 'object' && Array.isArray(value.entries) && value.goals && typeof value.goals === 'object'
+
+const mergeMigratedData = (stored, local) => {
+  if (!stored) return local
+  const entries = new Map(stored.entries.map(entry => [entry.id, entry]))
+  for (const entry of local.entries) if (entry?.id && !entries.has(entry.id)) entries.set(entry.id, entry)
+  return {
+    ...stored,
+    entries: [...entries.values()],
+    lastMyNetDiarySync: Math.max(stored.lastMyNetDiarySync || 0, local.lastMyNetDiarySync || 0) || undefined,
+  }
+}
 
 app.use(express.json({ limit: '36mb' }))
 
@@ -38,7 +80,46 @@ const nutrientSchema = {
 }
 
 app.get('/api/health', (_request, response) => {
-  response.json({ ok: true, visionConfigured: Boolean(process.env.OPENAI_API_KEY), model: process.env.OPENAI_VISION_MODEL || 'gpt-5.6-luna' })
+  response.json({ ok: true, database: 'sqlite', visionConfigured: Boolean(process.env.OPENAI_API_KEY), model: process.env.OPENAI_VISION_MODEL || 'gpt-5.6-luna' })
+})
+
+app.get('/api/data', (_request, response) => {
+  const state = readAppState()
+  if (!state) return response.status(404).json({ error: 'Nourish has not initialized its database yet.' })
+  response.json(state)
+})
+
+app.post('/api/data/bootstrap', (request, response) => {
+  const stored = readAppState()?.data
+  const local = validAppData(request.body?.localData) ? request.body.localData : null
+  if (!stored && !local) return response.status(409).json({ error: 'Open Nourish once on a device containing your existing diary to initialize the database.' })
+  const state = writeAppState(local ? mergeMigratedData(stored, local) : stored)
+  response.json(state)
+})
+
+app.post('/api/data/mutate', (request, response) => {
+  const current = readAppState()?.data
+  if (!current) return response.status(409).json({ error: 'Nourish database is not initialized.' })
+  const mutation = request.body
+  let next
+  if (mutation?.type === 'addEntries' && Array.isArray(mutation.entries)) {
+    const existing = new Set(current.entries.map(entry => entry.id))
+    next = { ...current, entries: [...current.entries, ...mutation.entries.filter(entry => entry?.id && !existing.has(entry.id))] }
+  } else if (mutation?.type === 'deleteEntry' && typeof mutation.id === 'string') {
+    next = { ...current, entries: current.entries.filter(entry => entry.id !== mutation.id || entry.source === 'mynetdiary') }
+  } else if (mutation?.type === 'updateGoals' && mutation.goals && typeof mutation.goals === 'object') {
+    next = { ...current, goals: { ...current.goals, ...mutation.goals } }
+  } else if (mutation?.type === 'replaceMyNetDiary' && Array.isArray(mutation.entries) && Array.isArray(mutation.years)) {
+    const years = new Set(mutation.years.map(String))
+    next = {
+      ...current,
+      entries: [...current.entries.filter(entry => entry.source !== 'mynetdiary' || !years.has(entry.date?.slice(0, 4))), ...mutation.entries],
+      lastMyNetDiarySync: Number(mutation.syncedAt) || Date.now(),
+    }
+  } else {
+    return response.status(400).json({ error: 'Invalid Nourish data mutation.' })
+  }
+  response.json(writeAppState(next))
 })
 
 const numberValue = value => Number.isFinite(Number(value)) ? Number(value) : 0

@@ -279,8 +279,8 @@ button:focus-visible, input:focus-visible { outline: 3px solid rgba(35, 121, 94,
 }
 
 @media (min-width: 960px) {
-  .app-shell { min-height: 100dvh; height: auto; display: grid; grid-template-columns: 240px 1fr; overflow: visible; }
-  .desktop-sidebar { position: sticky; top: 0; display: flex; flex-direction: column; height: 100dvh; padding: 28px 20px; border-right: 1px solid var(--line); background: white; }
+  .app-shell { height: 100dvh; display: grid; grid-template-columns: 240px 1fr; overflow: hidden; }
+  .desktop-sidebar { display: flex; flex-direction: column; height: 100dvh; padding: 28px 20px; border-right: 1px solid var(--line); background: white; }
   .brand { display: flex; align-items: center; gap: 10px; margin: 0 8px 40px; font-size: 21px; }
   .brand > span { width: 38px; height: 38px; display: grid; place-items: center; border-radius: 12px; background: var(--green); color: white; }
   .brand svg { width: 20px; }
@@ -291,7 +291,7 @@ button:focus-visible, input:focus-visible { outline: 3px solid rgba(35, 121, 94,
   .sidebar-profile { display: flex; align-items: center; gap: 9px; margin-top: auto; padding: 12px; border-radius: 14px; background: var(--canvas); }
   .sidebar-profile > span { display: flex; flex-direction: column; }
   .sidebar-profile small { color: var(--muted); }
-  .app-main { width: min(100%, 840px); height: auto; padding: 38px 30px 70px; overflow: visible; }
+  .app-main { width: min(100%, 840px); height: 100dvh; padding: 38px 30px 70px; overflow-x: hidden; overflow-y: auto; }
   .bottom-nav, .fab { display: none; }
   .sticky-save { bottom: 20px; }
   .modal-backdrop { align-items: center; padding: 30px; }

@@ -6,7 +6,7 @@ import {
 import './App.css'
 import { PhotoMealModal } from './PhotoMealModal'
 import { ModalHandle } from './ModalHandle'
-import { loadData, saveData } from './storage'
+import { bootstrapData, fetchData, loadData, mutateData, type DataMutation } from './storage'
 import {
   emptyNutrients, mealTypes, type AppData, type DiaryEntry, type Food, type Goals,
   type MealType, type Nutrients,
@@ -276,20 +276,50 @@ function App() {
   const [syncing, setSyncing] = useState(false)
   const entries = useMemo(() => data.entries.filter(entry => entry.date === date), [data.entries, date])
 
-  useEffect(() => saveData(data), [data])
+  useEffect(() => {
+    let active = true
+    bootstrapData()
+      .then(remote => { if (active) setData(remote) })
+      .catch(error => { if (active) setToast(error instanceof Error ? error.message : 'Could not load Nourish data.') })
+
+    const refresh = () => fetchData().then(remote => { if (active) setData(remote) }).catch(() => {})
+    const interval = window.setInterval(refresh, 10_000)
+    const onVisibility = () => { if (document.visibilityState === 'visible') refresh() }
+    window.addEventListener('focus', refresh)
+    document.addEventListener('visibilitychange', onVisibility)
+    return () => {
+      active = false
+      window.clearInterval(interval)
+      window.removeEventListener('focus', refresh)
+      document.removeEventListener('visibilitychange', onVisibility)
+    }
+  }, [])
   useEffect(() => { if (!toast) return; const timeout = setTimeout(() => setToast(''), 2400); return () => clearTimeout(timeout) }, [toast])
+
+  const commit = async (mutation: DataMutation) => {
+    try {
+      const remote = await mutateData(mutation)
+      setData(remote)
+      return true
+    } catch (error) {
+      setToast(error instanceof Error ? error.message : 'Could not save Nourish data.')
+      return false
+    }
+  }
 
   const logFood = (food: Food, meal: MealType) => {
     const entry: DiaryEntry = { id: crypto.randomUUID(), date, meal, food, servings: 1, loggedAt: Date.now(), source: 'nourish-manual' }
-    setData(current => ({ ...current, entries: [...current.entries, entry] }))
-    setAddMeal(null); setToast(`${food.name} added to ${meal.toLowerCase()}`)
+    void commit({ type: 'addEntries', entries: [entry] }).then(saved => {
+      if (saved) { setAddMeal(null); setToast(`${food.name} added to ${meal.toLowerCase()}`) }
+    })
   }
   const openAdd = (meal: MealType = 'Breakfast') => setAddMeal(meal)
   const logPhotoMeal = (foods: Food[], meal: MealType) => {
     const now = Date.now()
     const entries: DiaryEntry[] = foods.map((food, index) => ({ id: crypto.randomUUID(), date, meal, food, servings: 1, loggedAt: now + index, source: 'nourish-photo' }))
-    setData(current => ({ ...current, entries: [...current.entries, ...entries] }))
-    setPhotoMeal(null); setToast(`Estimated ${meal.toLowerCase()} logged from ${foods.length} item${foods.length === 1 ? '' : 's'}`)
+    void commit({ type: 'addEntries', entries }).then(saved => {
+      if (saved) { setPhotoMeal(null); setToast(`Estimated ${meal.toLowerCase()} logged from ${foods.length} item${foods.length === 1 ? '' : 's'}`) }
+    })
   }
   const navItems: Array<{ id: View; label: string; icon: typeof Home }> = [
     { id: 'today', label: 'Today', icon: Home }, { id: 'diary', label: 'Diary', icon: Apple },
@@ -303,12 +333,8 @@ function App() {
       if (!response.ok) throw new Error(payload.error || 'MyNetDiary sync failed.')
       const imported = payload.entries as DiaryEntry[]
       const importedYears = new Set<string>([String(payload.exportYear), ...imported.map(entry => entry.date.slice(0, 4))])
-      setData(current => ({
-        ...current,
-        entries: [...current.entries.filter(entry => entry.source !== 'mynetdiary' || !importedYears.has(entry.date.slice(0, 4))), ...imported],
-        lastMyNetDiarySync: Date.now(),
-      }))
-      setToast(payload.fresh ? `Downloaded and synced ${imported.length} MyNetDiary food entries` : `Synced ${imported.length} entries from the latest MyNetDiary download`)
+      const saved = await commit({ type: 'replaceMyNetDiary', entries: imported, years: [...importedYears], syncedAt: Date.now() })
+      if (saved) setToast(payload.fresh ? `Downloaded and synced ${imported.length} MyNetDiary food entries` : `Synced ${imported.length} entries from the latest MyNetDiary download`)
     } catch (error) {
       setToast(error instanceof Error ? error.message : 'MyNetDiary sync failed.')
     } finally { setSyncing(false) }
@@ -324,9 +350,9 @@ function App() {
       {view !== 'goals' && <DatePicker date={date} onChange={setDate} />}
       <div className="content">
         {view === 'today' && <Dashboard entries={entries} goals={data.goals} onPhoto={() => setPhotoMeal('Breakfast')} onManual={openAdd} onViewDiary={() => setView('diary')} />}
-        {view === 'diary' && <Diary entries={entries} onAdd={openAdd} onSelect={setSelectedEntry} onDelete={id => setData(current => ({ ...current, entries: current.entries.filter(entry => entry.id !== id || entry.source === 'mynetdiary') }))} />}
+        {view === 'diary' && <Diary entries={entries} onAdd={openAdd} onSelect={setSelectedEntry} onDelete={id => { void commit({ type: 'deleteEntry', id }) }} />}
         {view === 'insights' && <Insights data={data} date={date} />}
-        {view === 'goals' && <GoalsView goals={data.goals} onSave={goals => { setData(current => ({ ...current, goals })); setToast('Nutrition goals saved') }} />}
+        {view === 'goals' && <GoalsView goals={data.goals} onSave={goals => { void commit({ type: 'updateGoals', goals }).then(saved => { if (saved) setToast('Nutrition goals saved') }) }} />}
       </div>
     </main>
     <nav className="bottom-nav">{navItems.map(item => <button className={view === item.id ? 'active' : ''} key={item.id} onClick={() => setView(item.id)}><item.icon /><span>{item.label}</span></button>)}</nav>
