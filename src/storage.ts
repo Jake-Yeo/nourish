@@ -6,9 +6,6 @@ const KEY = 'nourish-data-v1'
 export const initialData: AppData = {
   entries: [],
   goals: defaultGoals,
-  waterByDate: {},
-  customFoods: [],
-  recentFoodIds: [],
 }
 
 export function loadData(): AppData {

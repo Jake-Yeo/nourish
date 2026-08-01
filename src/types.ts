@@ -34,18 +34,18 @@ export type DiaryEntry = {
   food: Food
   servings: number
   loggedAt: number
+  source?: 'nourish-photo' | 'nourish-manual' | 'nourish-barcode' | 'mynetdiary'
+  externalId?: string
 }
 
 export type Goals = Nutrients & {
-  water: number
+  maintenanceCalories: number
 }
 
 export type AppData = {
   entries: DiaryEntry[]
   goals: Goals
-  waterByDate: Record<string, number>
-  customFoods: Food[]
-  recentFoodIds: string[]
+  lastMyNetDiarySync?: number
 }
 
 export const mealTypes: MealType[] = ['Breakfast', 'Lunch', 'Dinner', 'Snacks']

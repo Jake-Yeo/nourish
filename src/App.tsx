@@ -1,13 +1,11 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   Apple, BarChart3, CalendarDays, Camera, ChevronLeft, ChevronRight, CircleUserRound,
-  Droplets, Home, Minus, Plus, ScanLine, Search, Sparkles, Target,
-  Trash2, X,
+  Home, KeyRound, Plus, RefreshCw, Sparkles, Target, Trash2, X,
 } from 'lucide-react'
 import './App.css'
-import { starterFoods } from './data'
 import { PhotoMealModal } from './PhotoMealModal'
-import { lookupBarcode } from './openFoodFacts'
+import { ModalHandle } from './ModalHandle'
 import { loadData, saveData } from './storage'
 import {
   emptyNutrients, mealTypes, type AppData, type DiaryEntry, type Food, type Goals,
@@ -15,7 +13,6 @@ import {
 } from './types'
 
 type View = 'today' | 'diary' | 'insights' | 'goals'
-type AddMode = 'search' | 'scan' | 'custom'
 const nutrientMeta: Array<{ key: keyof Nutrients; label: string; unit: string; color: string }> = [
   { key: 'protein', label: 'Protein', unit: 'g', color: '#7856d8' },
   { key: 'carbs', label: 'Carbs', unit: 'g', color: '#e39b37' },
@@ -83,9 +80,8 @@ function DatePicker({ date, onChange }: { date: string; onChange: (date: string)
   </div>
 }
 
-function Dashboard({ entries, goals, water, onWater, onPhoto, onManual, onViewDiary }: {
-  entries: DiaryEntry[]; goals: Goals; water: number; onWater: (n: number) => void;
-  onPhoto: () => void; onManual: (meal?: MealType) => void; onViewDiary: () => void
+function Dashboard({ entries, goals, onPhoto, onManual, onViewDiary }: {
+  entries: DiaryEntry[]; goals: Goals; onPhoto: () => void; onManual: (meal?: MealType) => void; onViewDiary: () => void
 }) {
   const totals = totalNutrients(entries)
   const loggedMeals = new Set(entries.map(entry => entry.meal)).size
@@ -112,28 +108,22 @@ function Dashboard({ entries, goals, water, onWater, onPhoto, onManual, onViewDi
       <div className="macro-grid">{nutrientMeta.map(item => <NutrientBar key={item.key} label={item.label} unit={item.unit} color={item.color} value={totals[item.key]} goal={goals[item.key]} />)}</div>
     </section>
 
-    <section className="section-card water-card">
-      <div className="water-icon"><Droplets /></div>
-      <div className="water-copy"><span className="eyebrow">Hydration</span><h3>{water} of {goals.water} cups</h3><div className="track"><span style={{ width: `${Math.min(water / goals.water * 100, 100)}%` }} /></div></div>
-      <div className="stepper compact"><button onClick={() => onWater(Math.max(0, water - 1))}><Minus /></button><button onClick={() => onWater(water + 1)}><Plus /></button></div>
-    </section>
-
     <section className="section-card meals-preview">
       <div className="section-heading"><div><span className="eyebrow">Diary</span><h3>Meals</h3></div><button className="text-button" onClick={onViewDiary}>View all</button></div>
       {mealTypes.map(meal => {
         const mealEntries = entries.filter(entry => entry.meal === meal)
         const cals = totalNutrients(mealEntries).calories
-        return <button className="meal-row" key={meal} onClick={() => onManual(meal)}>
+        return <div className="meal-row" key={meal}>
           <span className={`meal-icon meal-icon--${meal.toLowerCase()}`}><Apple size={18} /></span>
           <span className="meal-row__copy"><strong>{meal}</strong><small>{mealEntries.length ? `${mealEntries.length} item${mealEntries.length === 1 ? '' : 's'}` : 'Nothing logged'}</small></span>
-          <span className="meal-row__calories">{Math.round(cals)} cal</span><Plus size={18} />
-        </button>
+          <span className="meal-row__calories">{Math.round(cals)} cal</span><button className="icon-button" onClick={() => onManual(meal)} aria-label={`Quick add to ${meal}`}><Plus size={18} /></button>
+        </div>
       })}
     </section>
   </>
 }
 
-function Diary({ entries, onAdd, onDelete }: { entries: DiaryEntry[]; onAdd: (meal: MealType) => void; onDelete: (id: string) => void }) {
+function Diary({ entries, onAdd, onDelete, onSelect }: { entries: DiaryEntry[]; onAdd: (meal: MealType) => void; onDelete: (id: string) => void; onSelect: (entry: DiaryEntry) => void }) {
   return <div className="diary-list">{mealTypes.map(meal => {
     const items = entries.filter(entry => entry.meal === meal)
     const totals = totalNutrients(items)
@@ -141,11 +131,11 @@ function Diary({ entries, onAdd, onDelete }: { entries: DiaryEntry[]; onAdd: (me
       <div className="meal-card__header"><div><h3>{meal}</h3><span>{Math.round(totals.calories)} cal · {round(totals.protein, 1)}g protein</span></div><button onClick={() => onAdd(meal)}><Plus /></button></div>
       {items.length === 0 ? <button className="empty-meal" onClick={() => onAdd(meal)}>Add {meal.toLowerCase()}</button> : items.map(entry => {
         const n = scaleNutrients(entry.food, entry.servings)
-        return <div className="food-entry" key={entry.id}>
+        return <div className="food-entry" key={entry.id} role="button" tabIndex={0} onClick={() => onSelect(entry)} onKeyDown={event => { if (event.key === 'Enter' || event.key === ' ') onSelect(entry) }}>
           <div className="food-thumb">{entry.food.image ? <img src={entry.food.image} alt="" /> : <Apple size={20} />}</div>
-          <div className="food-entry__copy"><strong>{entry.food.name}</strong><span>{round(entry.servings, 2)} × {entry.food.servingLabel}</span></div>
+          <div className="food-entry__copy"><strong>{entry.food.name}</strong><span>{round(entry.servings, 2)} × {entry.food.servingLabel}</span><small className={`source-badge source-badge--${entry.source || 'nourish-manual'}`}>{entry.source === 'mynetdiary' ? 'MyNetDiary' : entry.source === 'nourish-photo' ? 'AI photo' : entry.source === 'nourish-barcode' ? 'Barcode' : 'Nourish'}</small></div>
           <div className="food-entry__nutrition"><strong>{Math.round(n.calories)}</strong><span>cal</span></div>
-          <button className="icon-button danger" onClick={() => onDelete(entry.id)} aria-label={`Delete ${entry.food.name}`}><Trash2 /></button>
+          {entry.source !== 'mynetdiary' && <button className="icon-button danger" onClick={event => { event.stopPropagation(); onDelete(entry.id) }} aria-label={`Delete ${entry.food.name}`}><Trash2 /></button>}
         </div>
       })}
     </section>
@@ -153,20 +143,24 @@ function Diary({ entries, onAdd, onDelete }: { entries: DiaryEntry[]; onAdd: (me
 }
 
 function Insights({ data, date }: { data: AppData; date: string }) {
-  const days = Array.from({ length: 7 }, (_, index) => shiftDate(date, index - 6))
+  const [range, setRange] = useState(7)
+  const days = Array.from({ length: range }, (_, index) => shiftDate(date, index - range + 1))
   const daily = days.map(day => ({ day, totals: totalNutrients(data.entries.filter(entry => entry.date === day)) }))
   const current = daily.at(-1)?.totals || emptyNutrients()
-  const averageCalories = daily.reduce((sum, item) => sum + item.totals.calories, 0) / 7
+  const adjustedDays = daily.map(item => item.totals.calories < 1000 ? data.goals.maintenanceCalories : item.totals.calories)
+  const assumedDays = daily.filter(item => item.totals.calories < 1000).length
+  const averageCalories = adjustedDays.reduce((sum, calories) => sum + calories, 0) / range
   return <>
     <section className="insight-hero">
-      <span className="eyebrow">Seven-day view</span><h2>Your nutrition trend</h2>
+      <div className="insight-heading"><div><span className="eyebrow">{range}-day view</span><h2>Your nutrition trend</h2></div><label>Days<select value={range} onChange={event => setRange(Number(event.target.value))}>{Array.from({ length: 89 }, (_, index) => index + 2).map(days => <option key={days} value={days}>{days}</option>)}</select></label></div>
       <div className="chart">
-        {daily.map(item => <div className="chart__column" key={item.day}>
+        {daily.map((item, index) => <div className="chart__column" key={item.day} title={`${friendlyDate(item.day)}: ${Math.round(item.totals.calories)} calories`}>
           <span style={{ height: `${Math.max(4, Math.min(item.totals.calories / data.goals.calories * 100, 100))}%` }} />
-          <small>{new Date(`${item.day}T12:00:00`).toLocaleDateString(undefined, { weekday: 'narrow' })}</small>
+          <small>{range <= 14 || index === 0 || index === range - 1 || index % Math.ceil(range / 7) === 0 ? new Date(`${item.day}T12:00:00`).toLocaleDateString(undefined, { weekday: 'narrow' }) : ''}</small>
         </div>)}
       </div>
       <p><strong>{Math.round(averageCalories).toLocaleString()}</strong> average calories per day</p>
+      {assumedDays > 0 && <small className="average-note">Used {data.goals.maintenanceCalories.toLocaleString()} calories for {assumedDays} day{assumedDays === 1 ? '' : 's'} logged below 1,000.</small>}
     </section>
     <section className="section-card">
       <div className="section-heading"><div><span className="eyebrow">Today</span><h3>Nutrient report</h3></div></div>
@@ -184,7 +178,7 @@ function GoalsView({ goals, onSave }: { goals: Goals; onSave: (goals: Goals) => 
     { key: 'fiber', label: 'Fiber', unit: 'g', description: 'Supports digestion and fullness' },
     { key: 'carbs', label: 'Carbohydrates', unit: 'g', description: 'Your primary energy source' },
     { key: 'fat', label: 'Fat', unit: 'g', description: 'Essential dietary fats' },
-    { key: 'water', label: 'Water', unit: 'cups', description: 'Daily hydration target' },
+    { key: 'maintenanceCalories', label: 'Calorie maintenance', unit: 'kcal', description: 'Used for insight days logged below 1,000 calories' },
     ...extraNutrients.map(item => ({ ...item, description: `Daily ${item.label.toLowerCase()} target` })),
   ]
   return <>
@@ -194,85 +188,79 @@ function GoalsView({ goals, onSave }: { goals: Goals; onSave: (goals: Goals) => 
       <span className="number-input"><input type="number" min="0" step={field.key === 'calories' || field.unit === 'mg' ? 1 : .1} value={draft[field.key]} onChange={event => setDraft({ ...draft, [field.key]: Math.max(0, Number(event.target.value)) })} /><em>{field.unit}</em></span>
     </label>)}</section>
     <button className="primary-button sticky-save" onClick={() => onSave(draft)}>Save goals</button>
+    <MyNetDiaryAccount />
   </>
 }
 
-function Scanner({ onResult, onManual }: { onResult: (code: string) => void; onManual: (code: string) => void }) {
-  const videoRef = useRef<HTMLVideoElement>(null)
-  const streamRef = useRef<MediaStream | null>(null)
-  const [error, setError] = useState('')
-  const [manual, setManual] = useState('')
+function MyNetDiaryAccount() {
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [configured, setConfigured] = useState(false)
+  const [emailHint, setEmailHint] = useState('')
+  const [saving, setSaving] = useState(false)
+  const [message, setMessage] = useState('')
 
   useEffect(() => {
-    let active = true
-    const start = async () => {
-      if (!navigator.mediaDevices?.getUserMedia) return setError('Camera access is not available in this browser.')
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } }, audio: false })
-        streamRef.current = stream
-        if (videoRef.current) { videoRef.current.srcObject = stream; await videoRef.current.play() }
-        const Detector = (window as unknown as { BarcodeDetector?: new (options: { formats: string[] }) => { detect: (source: HTMLVideoElement) => Promise<Array<{ rawValue: string }>> } }).BarcodeDetector
-        if (!Detector) return setError('Live barcode detection is not supported here. Enter the barcode below.')
-        const detector = new Detector({ formats: ['ean_13', 'ean_8', 'upc_a', 'upc_e'] })
-        const scan = async () => {
-          if (!active || !videoRef.current) return
-          try { const codes = await detector.detect(videoRef.current); if (codes[0]?.rawValue) return onResult(codes[0].rawValue) } catch { /* keep scanning */ }
-          requestAnimationFrame(scan)
-        }
-        scan()
-      } catch { setError('Camera permission was denied. Enter the barcode below.') }
-    }
-    start()
-    return () => { active = false; streamRef.current?.getTracks().forEach(track => track.stop()) }
-  }, [onResult])
+    fetch('/api/mynetdiary-credentials').then(response => response.json()).then(payload => {
+      setConfigured(Boolean(payload.configured)); setEmailHint(String(payload.emailHint || ''))
+    }).catch(() => setMessage('Could not check MyNetDiary login status.'))
+  }, [])
 
-  return <div className="scanner">
-    <div className="camera-frame"><video ref={videoRef} muted playsInline /><div className="scan-target"><span /><span /><span /><span /></div><ScanLine className="scan-icon" /></div>
-    <p>{error || 'Center the product barcode inside the frame.'}</p>
-    <div className="manual-barcode"><input inputMode="numeric" placeholder="Enter UPC or EAN" value={manual} onChange={event => setManual(event.target.value.replace(/\D/g, ''))} /><button disabled={manual.length < 6} onClick={() => onManual(manual)}>Look up</button></div>
+  const save = async () => {
+    setSaving(true); setMessage('')
+    try {
+      const response = await fetch('/api/mynetdiary-credentials', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }),
+      })
+      const payload = await response.json()
+      if (!response.ok) throw new Error(payload.error || 'Could not save MyNetDiary login.')
+      setConfigured(true); setEmailHint(payload.emailHint || email); setEmail(''); setPassword('')
+      setMessage('Saved securely in this Mac’s Keychain.')
+    } catch (error) { setMessage(error instanceof Error ? error.message : 'Could not save MyNetDiary login.') }
+    finally { setSaving(false) }
+  }
+
+  return <section className="account-card">
+    <div className="account-card__heading"><div><KeyRound /></div><span><strong>MyNetDiary login</strong><small>{configured ? `Configured for ${emailHint}` : 'Required for automatic headless sync'}</small></span></div>
+    <p>Nourish stores this login in the Mac’s Keychain and uses it only when MyNetDiary asks the sync browser to sign in.</p>
+    <label>Email or account name<input type="text" autoCapitalize="none" autoCorrect="off" value={email} onChange={event => setEmail(event.target.value)} placeholder={configured ? 'Enter to replace saved login' : 'MyNetDiary email'} /></label>
+    <label>Password<input type="password" value={password} onChange={event => setPassword(event.target.value)} placeholder={configured ? 'Enter to replace saved password' : 'MyNetDiary password'} /></label>
+    <button className="secondary-button" disabled={saving || !email || !password} onClick={save}>{saving ? 'Saving…' : configured ? 'Update login' : 'Save login'}</button>
+    {message && <small className="account-card__message">{message}</small>}
+  </section>
+}
+
+function QuickAddModal({ meal, onClose, onLog }: {
+  meal: MealType; onClose: () => void; onLog: (food: Food, meal: MealType) => void
+}) {
+  const [error, setError] = useState('')
+  const [quick, setQuick] = useState({ name: '', calories: '', protein: '', fiber: '' })
+  const add = () => {
+    if (![quick.calories, quick.protein, quick.fiber].some(value => value !== '')) return setError('Add at least one nutritional value.')
+    const nutrients = emptyNutrients()
+    for (const key of ['calories', 'protein', 'fiber'] as const) nutrients[key] = Math.max(0, Number(quick[key]) || 0)
+    const item: Food = { id: `quick-${crypto.randomUUID()}`, name: quick.name.trim() || 'Quick add', servingLabel: '1 entry', servingGrams: 0, nutrients, source: 'custom' }
+    onLog(item, meal)
+  }
+  return <div className="modal-backdrop" role="presentation">
+    <div className="modal-sheet" role="dialog" aria-modal="true" aria-label="Quick add nutrition">
+      <ModalHandle onClose={onClose} />
+      <header className="modal-header"><div><span className="eyebrow">Add to {meal}</span><h2>Quick add</h2></div><button onClick={onClose}><X /></button></header>
+      <div className="custom-form"><label>Name <small>(optional)</small><input value={quick.name} onChange={event => setQuick({ ...quick, name: event.target.value })} placeholder="e.g. Restaurant meal adjustment" /></label><div className="quick-grid">{(['calories', 'protein', 'fiber'] as const).map(key => <label key={key}>{key[0].toUpperCase() + key.slice(1)} <small>(optional)</small><input type="number" inputMode="decimal" min="0" value={quick[key]} onChange={event => setQuick({ ...quick, [key]: event.target.value })} /></label>)}</div><button className="primary-button" onClick={add}><Plus /> Add to {meal}</button></div>
+      {error && <p className="error-message">{error}</p>}
+    </div>
   </div>
 }
 
-function AddFoodModal({ meal, foods, onClose, onLog, onCustom }: {
-  meal: MealType; foods: Food[]; onClose: () => void; onLog: (food: Food, servings: number, meal: MealType) => void; onCustom: (food: Food) => void
-}) {
-  const [mode, setMode] = useState<AddMode>('search')
-  const [query, setQuery] = useState('')
-  const [selected, setSelected] = useState<Food | null>(null)
-  const [servings, setServings] = useState(1)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState('')
-  const [custom, setCustom] = useState({ name: '', brand: '', servingLabel: '1 serving', calories: '', protein: '', carbs: '', fat: '', fiber: '' })
-  const results = foods.filter(item => `${item.name} ${item.brand || ''}`.toLowerCase().includes(query.toLowerCase())).slice(0, 20)
-  const scan = async (code: string) => {
-    setLoading(true); setError('')
-    try { setSelected(await lookupBarcode(code)); setServings(1) } catch (err) { setError(err instanceof Error ? err.message : 'Barcode lookup failed.') }
-    finally { setLoading(false) }
-  }
-  const createCustom = () => {
-    if (!custom.name.trim() || !custom.calories) return setError('Add a name and calories first.')
-    const nutrients = emptyNutrients()
-    for (const key of ['calories', 'protein', 'carbs', 'fat', 'fiber'] as const) nutrients[key] = Number(custom[key]) || 0
-    const item: Food = { id: `custom-${crypto.randomUUID()}`, name: custom.name.trim(), brand: custom.brand.trim() || undefined, servingLabel: custom.servingLabel.trim() || '1 serving', servingGrams: 100, nutrients, source: 'custom' }
-    onCustom(item); setSelected(item)
-  }
+function EntryDetailModal({ entry, onClose }: { entry: DiaryEntry; onClose: () => void }) {
+  const nutrients = scaleNutrients(entry.food, entry.servings)
   return <div className="modal-backdrop" role="presentation">
-    <div className="modal-sheet" role="dialog" aria-modal="true" aria-label="Log food">
-      <div className="modal-handle" />
-      <header className="modal-header"><div><span className="eyebrow">Add to {meal}</span><h2>{selected ? selected.name : 'Log food'}</h2></div><button onClick={onClose}><X /></button></header>
-      {selected ? <div className="food-detail">
-        <div className="food-detail__hero">{selected.image ? <img src={selected.image} alt="" /> : <div className="food-detail__placeholder"><Apple /></div>}<div><span>{selected.brand || (selected.source === 'custom' ? 'Custom food' : 'Food database')}</span><strong>{selected.servingLabel}</strong>{selected.barcode && <small>Barcode {selected.barcode}</small>}</div></div>
-        <div className="serving-picker"><span>Number of servings</span><div className="stepper"><button onClick={() => setServings(Math.max(.25, servings - .25))}><Minus /></button><strong>{round(servings, 2)}</strong><button onClick={() => setServings(servings + .25)}><Plus /></button></div></div>
-        <div className="nutrition-preview"><div><strong>{Math.round(selected.nutrients.calories * servings)}</strong><span>Calories</span></div>{nutrientMeta.map(item => <div key={item.key}><strong>{round(selected.nutrients[item.key] * servings, 1)}{item.unit}</strong><span>{item.label}</span></div>)}</div>
-        <button className="primary-button" onClick={() => onLog(selected, servings, meal)}><Plus /> Add to {meal}</button>
-        <button className="secondary-button" onClick={() => setSelected(null)}>Choose another food</button>
-      </div> : <>
-        <div className="mode-tabs"><button className={mode === 'search' ? 'active' : ''} onClick={() => setMode('search')}><Search /> Search</button><button className={mode === 'scan' ? 'active' : ''} onClick={() => setMode('scan')}><Camera /> Scan</button><button className={mode === 'custom' ? 'active' : ''} onClick={() => setMode('custom')}><Plus /> Custom</button></div>
-        {mode === 'search' && <><div className="search-box"><Search /><input autoFocus placeholder="Search foods" value={query} onChange={event => setQuery(event.target.value)} /></div><div className="food-results">{results.map(item => <button key={item.id} onClick={() => { setSelected(item); setServings(1) }}><span className="food-thumb"><Apple /></span><span><strong>{item.name}</strong><small>{item.brand ? `${item.brand} · ` : ''}{item.servingLabel}</small></span><b>{Math.round(item.nutrients.calories)} cal</b></button>)}</div></>}
-        {mode === 'scan' && (loading ? <div className="loading-state"><ScanLine /><h3>Looking up barcode…</h3></div> : <Scanner onResult={scan} onManual={scan} />)}
-        {mode === 'custom' && <div className="custom-form"><label>Food name<input value={custom.name} onChange={event => setCustom({ ...custom, name: event.target.value })} placeholder="e.g. Mom's lentil soup" /></label><label>Brand (optional)<input value={custom.brand} onChange={event => setCustom({ ...custom, brand: event.target.value })} /></label><label>Serving<input value={custom.servingLabel} onChange={event => setCustom({ ...custom, servingLabel: event.target.value })} /></label><div className="custom-grid">{(['calories', 'protein', 'carbs', 'fat', 'fiber'] as const).map(key => <label key={key}>{key[0].toUpperCase() + key.slice(1)}<input type="number" min="0" value={custom[key]} onChange={event => setCustom({ ...custom, [key]: event.target.value })} /></label>)}</div><button className="primary-button" onClick={createCustom}>Create food</button></div>}
-        {error && <p className="error-message">{error}</p>}
-      </>}
+    <div className="modal-sheet" role="dialog" aria-modal="true" aria-label={`${entry.food.name} nutrition details`}>
+      <ModalHandle onClose={onClose} />
+      <header className="modal-header"><div><span className="eyebrow">{entry.source === 'mynetdiary' ? 'MyNetDiary · Read only' : 'Nourish entry'}</span><h2>{entry.food.name}</h2></div><button onClick={onClose}><X /></button></header>
+      <div className="entry-detail-summary"><span>{entry.meal}</span><strong>{entry.food.servingLabel}</strong><small>{friendlyDate(entry.date)}</small></div>
+      <div className="nutrient-detail-grid">{[{ key: 'calories' as const, label: 'Calories', unit: 'kcal' }, ...nutrientMeta, ...extraNutrients].map(item => <div key={item.key}><span>{item.label}</span><strong>{round(nutrients[item.key], 1)} {item.unit}</strong></div>)}</div>
+      {entry.source === 'mynetdiary' && <p className="readonly-note">Synced items can only be changed in MyNetDiary. Your next sync will update Nourish.</p>}
     </div>
   </div>
 }
@@ -283,22 +271,23 @@ function App() {
   const [date, setDate] = useState(todayKey)
   const [addMeal, setAddMeal] = useState<MealType | null>(null)
   const [photoMeal, setPhotoMeal] = useState<MealType | null>(null)
+  const [selectedEntry, setSelectedEntry] = useState<DiaryEntry | null>(null)
   const [toast, setToast] = useState('')
+  const [syncing, setSyncing] = useState(false)
   const entries = useMemo(() => data.entries.filter(entry => entry.date === date), [data.entries, date])
-  const allFoods = useMemo(() => [...data.customFoods, ...starterFoods], [data.customFoods])
 
   useEffect(() => saveData(data), [data])
   useEffect(() => { if (!toast) return; const timeout = setTimeout(() => setToast(''), 2400); return () => clearTimeout(timeout) }, [toast])
 
-  const logFood = (food: Food, servings: number, meal: MealType) => {
-    const entry: DiaryEntry = { id: crypto.randomUUID(), date, meal, food, servings, loggedAt: Date.now() }
-    setData(current => ({ ...current, entries: [...current.entries, entry], recentFoodIds: [food.id, ...current.recentFoodIds.filter(id => id !== food.id)].slice(0, 12) }))
+  const logFood = (food: Food, meal: MealType) => {
+    const entry: DiaryEntry = { id: crypto.randomUUID(), date, meal, food, servings: 1, loggedAt: Date.now(), source: 'nourish-manual' }
+    setData(current => ({ ...current, entries: [...current.entries, entry] }))
     setAddMeal(null); setToast(`${food.name} added to ${meal.toLowerCase()}`)
   }
   const openAdd = (meal: MealType = 'Breakfast') => setAddMeal(meal)
   const logPhotoMeal = (foods: Food[], meal: MealType) => {
     const now = Date.now()
-    const entries: DiaryEntry[] = foods.map((food, index) => ({ id: crypto.randomUUID(), date, meal, food, servings: 1, loggedAt: now + index }))
+    const entries: DiaryEntry[] = foods.map((food, index) => ({ id: crypto.randomUUID(), date, meal, food, servings: 1, loggedAt: now + index, source: 'nourish-photo' }))
     setData(current => ({ ...current, entries: [...current.entries, ...entries] }))
     setPhotoMeal(null); setToast(`Estimated ${meal.toLowerCase()} logged from ${foods.length} item${foods.length === 1 ? '' : 's'}`)
   }
@@ -306,6 +295,24 @@ function App() {
     { id: 'today', label: 'Today', icon: Home }, { id: 'diary', label: 'Diary', icon: Apple },
     { id: 'insights', label: 'Insights', icon: BarChart3 }, { id: 'goals', label: 'Goals', icon: Target },
   ]
+  const syncMyNetDiary = async () => {
+    setSyncing(true)
+    try {
+      const response = await fetch('/api/sync-mynetdiary', { method: 'POST' })
+      const payload = await response.json()
+      if (!response.ok) throw new Error(payload.error || 'MyNetDiary sync failed.')
+      const imported = payload.entries as DiaryEntry[]
+      const importedYears = new Set<string>([String(payload.exportYear), ...imported.map(entry => entry.date.slice(0, 4))])
+      setData(current => ({
+        ...current,
+        entries: [...current.entries.filter(entry => entry.source !== 'mynetdiary' || !importedYears.has(entry.date.slice(0, 4))), ...imported],
+        lastMyNetDiarySync: Date.now(),
+      }))
+      setToast(payload.fresh ? `Downloaded and synced ${imported.length} MyNetDiary food entries` : `Synced ${imported.length} entries from the latest MyNetDiary download`)
+    } catch (error) {
+      setToast(error instanceof Error ? error.message : 'MyNetDiary sync failed.')
+    } finally { setSyncing(false) }
+  }
   return <div className="app-shell">
     <aside className="desktop-sidebar">
       <div className="brand"><span><Apple /></span><strong>Nourish</strong></div>
@@ -313,19 +320,20 @@ function App() {
       <div className="sidebar-profile"><CircleUserRound /><span><strong>Jake</strong><small>Personal diary</small></span></div>
     </aside>
     <main className="app-main">
-      <header className="app-header"><div><span className="eyebrow">Nutrition diary</span><h1>{view === 'today' ? 'Good day, Jake' : view[0].toUpperCase() + view.slice(1)}</h1></div><button className="avatar" onClick={() => setView('goals')}>J</button></header>
+      <header className="app-header"><div><span className="eyebrow">Nutrition diary</span><h1>{view === 'today' ? 'Good day, Jake' : view[0].toUpperCase() + view.slice(1)}</h1></div><div className="header-actions"><button className="today-button" onClick={() => { setDate(todayKey()); setView('today') }}><Home />Today</button><button className="sync-button" onClick={syncMyNetDiary} disabled={syncing}><RefreshCw className={syncing ? 'spinning' : ''} />{syncing ? 'Syncing' : 'Sync'}</button><button className="avatar" onClick={() => setView('goals')}>J</button></div></header>
       {view !== 'goals' && <DatePicker date={date} onChange={setDate} />}
       <div className="content">
-        {view === 'today' && <Dashboard entries={entries} goals={data.goals} water={data.waterByDate[date] || 0} onWater={water => setData(current => ({ ...current, waterByDate: { ...current.waterByDate, [date]: water } }))} onPhoto={() => setPhotoMeal('Breakfast')} onManual={openAdd} onViewDiary={() => setView('diary')} />}
-        {view === 'diary' && <Diary entries={entries} onAdd={openAdd} onDelete={id => setData(current => ({ ...current, entries: current.entries.filter(entry => entry.id !== id) }))} />}
+        {view === 'today' && <Dashboard entries={entries} goals={data.goals} onPhoto={() => setPhotoMeal('Breakfast')} onManual={openAdd} onViewDiary={() => setView('diary')} />}
+        {view === 'diary' && <Diary entries={entries} onAdd={openAdd} onSelect={setSelectedEntry} onDelete={id => setData(current => ({ ...current, entries: current.entries.filter(entry => entry.id !== id || entry.source === 'mynetdiary') }))} />}
         {view === 'insights' && <Insights data={data} date={date} />}
         {view === 'goals' && <GoalsView goals={data.goals} onSave={goals => { setData(current => ({ ...current, goals })); setToast('Nutrition goals saved') }} />}
       </div>
     </main>
     <nav className="bottom-nav">{navItems.map(item => <button className={view === item.id ? 'active' : ''} key={item.id} onClick={() => setView(item.id)}><item.icon /><span>{item.label}</span></button>)}</nav>
     <button className="fab" onClick={() => setPhotoMeal('Breakfast')} aria-label="Photograph meal"><Camera /></button>
-    {addMeal && <AddFoodModal meal={addMeal} foods={allFoods} onClose={() => setAddMeal(null)} onLog={logFood} onCustom={food => setData(current => ({ ...current, customFoods: [food, ...current.customFoods] }))} />}
+    {addMeal && <QuickAddModal meal={addMeal} onClose={() => setAddMeal(null)} onLog={logFood} />}
     {photoMeal && <PhotoMealModal defaultMeal={photoMeal} onClose={() => setPhotoMeal(null)} onLog={logPhotoMeal} />}
+    {selectedEntry && <EntryDetailModal entry={selectedEntry} onClose={() => setSelectedEntry(null)} />}
     {toast && <div className="toast"><Sparkles />{toast}</div>}
   </div>
 }

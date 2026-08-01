@@ -12,6 +12,9 @@ dist
 dist-ssr
 *.local
 
+# Private nutrition exports downloaded during MyNetDiary sync
+/data/mynetdiary/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

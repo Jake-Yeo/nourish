@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Camera, Check, ChevronLeft, ImagePlus, LoaderCircle, Sparkles, Trash2, X } from 'lucide-react'
 import { emptyNutrients, mealTypes, type Food, type MealType, type Nutrients } from './types'
 import { clearPhotoDraft, loadPhotoDraft, savePhotoDraft } from './photoDraft'
+import { ModalHandle } from './ModalHandle'
 
 type CapturedPhoto = { id: string; dataUrl: string; note: string }
 type EstimateItem = { name: string; portion: string; nutrients: Nutrients }
@@ -79,7 +80,7 @@ export function PhotoMealModal({ defaultMeal, onClose, onLog }: { defaultMeal: M
   }
 
   return <div className="modal-backdrop photo-modal-backdrop"><div className="modal-sheet photo-modal">
-    <div className="modal-handle" />
+    <ModalHandle onClose={onClose} />
     <header className="modal-header">
       <div>{step === 'review' && <button className="back-button" onClick={() => setStep('capture')}><ChevronLeft /></button>}<span className="eyebrow">AI meal estimate</span><h2>{step === 'review' ? estimate?.mealName : step === 'analyzing' ? 'Analyzing your meal' : 'Photograph your meal'}</h2></div>
       <button onClick={onClose}><X /></button>
