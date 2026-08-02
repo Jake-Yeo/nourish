@@ -6,7 +6,7 @@ export function ModalHandle({ onClose }: { onClose: () => void }) {
 
   return <button
     type="button"
-    className="modal-handle"
+    className="mx-auto mb-1 block h-7 w-14 touch-none cursor-grab bg-transparent p-0 active:cursor-grabbing"
     aria-label="Dismiss"
     style={{ transform: `translateY(${offset}px)` }}
     onClick={onClose}
@@ -18,5 +18,5 @@ export function ModalHandle({ onClose }: { onClose: () => void }) {
       if (distance > 55) onClose()
     }}
     onPointerCancel={() => { startY.current = null; setOffset(0) }}
-  />
+  ><span className="mx-auto block h-[5px] w-[42px] rounded-full bg-[#cbd3cf]" /></button>
 }
