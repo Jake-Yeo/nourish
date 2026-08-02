@@ -9,6 +9,7 @@ Nourish is Jake's private, photo-first nutrition PWA. Its primary workflow is mu
 - React 19, TypeScript, Vite, Tailwind CSS 4, Express, SQLite
 - `npm run build` — type-check and production build
 - `npm run lint` — lint source
+- `npm run check` — enforce architecture, lint, type-check, and build
 - `npm run serve` — serve the existing build on `127.0.0.1:4174`
 - `npm start` — rebuild, then serve
 
@@ -26,7 +27,21 @@ Nourish is Jake's private, photo-first nutrition PWA. Its primary workflow is mu
 ## Frontend conventions
 
 - Use React, TypeScript, and Tailwind utility classes directly in component `className` values.
-- Keep `src/index.css` limited to Tailwind's required compiler import. Do not add authored selectors, CSS modules, Sass, styled-components, or `@apply`.
+- Define colors, spacing, typography, radii, shadows, breakpoints, and layout measurements as semantic tokens in `tailwind.config.js`. Feature components must not contain raw color or spacing values.
+- Build features from stateless primitives in `src/components/ui`. Every primitive accepts `className` through the shared `cn()` helper backed by `clsx` and `tailwind-merge`; use CVA or a named map for variants.
+- Keep every component, hook, and function focused on one responsibility in its own named file under 100 lines. Do not add descriptive inline comments; use explicit self-documenting names.
+- Keep `src/index.css` limited to Tailwind's config/compiler imports. Do not add authored selectors, CSS modules, Sass, styled-components, or `@apply`.
 - Do not add MUI by default. Nourish has a custom consumer UI, and a second design system adds weight and override work without improving the experience.
 - Use the palette, typography, spacing, shape, responsive, and accessibility rules in `STYLE.md`.
 - Inputs must remain at least 16px on iOS to prevent focus zoom. Nourish intentionally disables zoom; other launcher apps do not inherit this behavior.
+
+## Project structure
+
+- `src/components/ui/` — stateless reusable primitives
+- `src/components/layout/` and `src/components/nutrition/` — reusable composed presentation
+- `src/features/` — feature interfaces composed from primitives
+- `src/hooks/` — isolated client state and orchestration
+- `src/services/` — browser persistence and API clients
+- `src/lib/` — one-purpose utilities
+- `server/routes/` — request handlers
+- `server/database/`, `server/mynetdiary/`, `server/vision/`, `server/keychain/` — isolated backend responsibilities

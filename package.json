@@ -7,17 +7,22 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
+    "check:architecture": "node scripts/checkArchitecture.mjs",
+    "check": "npm run check:architecture && npm run lint && npm run build && node --check server.mjs",
     "preview": "vite preview",
     "serve": "node server.mjs",
     "start": "npm run build && node server.mjs"
   },
   "dependencies": {
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "lucide-react": "^1.28.0",
     "playwright-core": "^1.62.1",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
+    "tailwind-merge": "^3.6.0",
     "xlsx": "^0.18.5"
   },
   "devDependencies": {

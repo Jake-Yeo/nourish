@@ -4,6 +4,8 @@ Private, photo-first nutrition PWA for Jake. Photograph a meal from multiple ang
 
 Built with React, TypeScript, Tailwind CSS, Vite, Express, and SQLite. See `AGENTS.md` for architecture constraints and `STYLE.md` for the interface system.
 
+The UI uses central semantic tokens, reusable stateless primitives, CVA variants, and feature modules under 100 lines. Run `npm run check` before deployment.
+
 ## Run
 
 ```bash

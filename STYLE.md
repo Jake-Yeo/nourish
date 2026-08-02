@@ -43,7 +43,10 @@ Nourish should feel calm, precise, and reassuring: a lightweight native nutritio
 
 ## Styling implementation
 
+- Semantic design tokens are defined centrally in `tailwind.config.js`; components use names such as `primary`, `surface`, `muted`, `card`, and `control` rather than raw values.
 - Tailwind CSS utility classes live directly in React component `className` values.
-- `src/index.css` contains only `@import "tailwindcss";`, which is the compiler entry—not an authored stylesheet.
+- `src/index.css` contains only Tailwind's `@config` and `@import` directives, which are compiler entries—not authored component styles.
+- Stateless primitives live in `src/components/ui`, use CVA for variants, and merge injected classes through the shared `cn()` helper built with `clsx` and `tailwind-merge`.
+- Complex screens compose primitives and small feature components; they do not duplicate styled HTML or mix API behavior into layout primitives.
 - Dynamic values such as progress widths and conic-gradient angles may use inline `style` properties.
 - MUI is intentionally excluded unless a future feature introduces complex data-grid or enterprise form requirements that Tailwind cannot reasonably cover.

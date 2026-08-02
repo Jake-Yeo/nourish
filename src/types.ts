@@ -27,6 +27,8 @@ export type Food = {
   source?: 'starter' | 'openfoodfacts' | 'custom'
 }
 
+export type DiaryEntrySource = 'nourish-photo' | 'nourish-manual' | 'nourish-barcode' | 'mynetdiary'
+
 export type DiaryEntry = {
   id: string
   date: string
@@ -34,7 +36,7 @@ export type DiaryEntry = {
   food: Food
   servings: number
   loggedAt: number
-  source?: 'nourish-photo' | 'nourish-manual' | 'nourish-barcode' | 'mynetdiary'
+  source?: DiaryEntrySource
   externalId?: string
 }
 
@@ -49,18 +51,3 @@ export type AppData = {
 }
 
 export const mealTypes: MealType[] = ['Breakfast', 'Lunch', 'Dinner', 'Snacks']
-
-export const emptyNutrients = (): Nutrients => ({
-  calories: 0,
-  protein: 0,
-  carbs: 0,
-  fat: 0,
-  fiber: 0,
-  sugar: 0,
-  sodium: 0,
-  saturatedFat: 0,
-  cholesterol: 0,
-  potassium: 0,
-  calcium: 0,
-  iron: 0,
-})
