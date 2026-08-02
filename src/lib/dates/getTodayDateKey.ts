@@ -1,3 +1,5 @@
+import { getDateKey } from './getDateKey'
+
 export function getTodayDateKey() {
-  return new Date().toISOString().slice(0, 10)
+  return getDateKey(new Date())
 }
