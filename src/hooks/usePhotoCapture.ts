@@ -4,6 +4,7 @@ import type { CapturedPhoto } from '../types/photoMeal'
 import { loadPhotoDraft } from '../services/photoDraft/loadPhotoDraft'
 import { savePhotoDraft } from '../services/photoDraft/savePhotoDraft'
 import { compressMealPhoto } from '../lib/photos/compressMealPhoto'
+import { maximumMealPhotos } from '../constants/photoMeal'
 
 export function usePhotoCapture(defaultMealType: MealType) {
   const [mealType, setMealType] = useState(defaultMealType)
@@ -28,8 +29,11 @@ export function usePhotoCapture(defaultMealType: MealType) {
     if (!photoFiles) return
     setCaptureError('')
     try {
-      const availablePhotoSlots = Math.max(0, 6 - capturedPhotos.length)
-      const newPhotos = await Promise.all(Array.from(photoFiles).slice(0, availablePhotoSlots).map(async photoFile => ({ id: crypto.randomUUID(), dataUrl: await compressMealPhoto(photoFile), note: '' })))
+      const availablePhotoSlots = Math.max(0, maximumMealPhotos - capturedPhotos.length)
+      const newPhotos: CapturedPhoto[] = []
+      for (const photoFile of Array.from(photoFiles).slice(0, availablePhotoSlots)) {
+        newPhotos.push({ id: crypto.randomUUID(), dataUrl: await compressMealPhoto(photoFile), note: '' })
+      }
       setCapturedPhotos(currentPhotos => [...currentPhotos, ...newPhotos])
     } catch (error) {
       setCaptureError(error instanceof Error ? error.message : 'Could not add photo.')

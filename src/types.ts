@@ -29,6 +29,12 @@ export type Food = {
 
 export type DiaryEntrySource = 'nourish-photo' | 'nourish-manual' | 'nourish-barcode' | 'mynetdiary'
 
+export type AiPhotoExplanation = {
+  confidence: 'low' | 'medium' | 'high'
+  summary: string
+  assumptions: string[]
+}
+
 export type DiaryEntry = {
   id: string
   date: string
@@ -38,6 +44,7 @@ export type DiaryEntry = {
   loggedAt: number
   source?: DiaryEntrySource
   externalId?: string
+  aiPhotoExplanation?: AiPhotoExplanation
 }
 
 export type Goals = Nutrients & {

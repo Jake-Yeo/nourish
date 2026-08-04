@@ -1,5 +1,6 @@
 import { ChevronLeft } from 'lucide-react'
 import type { Food, MealType } from '../../types'
+import type { MealEstimateExplanation } from '../../types/photoMeal'
 import { useMealEstimate } from '../../hooks/useMealEstimate'
 import { usePhotoCapture } from '../../hooks/usePhotoCapture'
 import { Button } from '../../components/ui/Button'
@@ -9,7 +10,7 @@ import { MealAnalysisLoading } from './MealAnalysisLoading'
 import { MealEstimateReview } from './MealEstimateReview'
 import { PhotoCaptureStep } from './PhotoCaptureStep'
 
-export function PhotoMealModal({ defaultMealType, onClose, onLog }: { defaultMealType: MealType; onClose: () => void; onLog: (foods: Food[], mealType: MealType) => void }) {
+export function PhotoMealModal({ defaultMealType, onClose, onLog }: { defaultMealType: MealType; onClose: () => void; onLog: (foods: Food[], mealType: MealType, explanation: MealEstimateExplanation) => Promise<boolean> }) {
   const capture = usePhotoCapture(defaultMealType)
   const estimate = useMealEstimate(onLog)
   const modalTitle = estimate.activeStep === 'review' ? estimate.mealEstimate?.mealName : estimate.activeStep === 'analyzing' ? 'Analyzing your meal' : 'Photograph your meal'

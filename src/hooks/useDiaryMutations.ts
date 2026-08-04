@@ -1,5 +1,6 @@
 import type { DataMutation } from '../services/nutritionData/DataMutation'
 import type { DiaryEntry, Food, MealType } from '../types'
+import type { MealEstimateExplanation } from '../types/photoMeal'
 
 type DiaryMutationOptions = {
   commitNutritionMutation: (mutation: DataMutation) => Promise<boolean>
@@ -18,13 +19,15 @@ export function useDiaryMutations(options: DiaryMutationOptions) {
     }
   }
 
-  const addPhotoEntries = async (foods: Food[], mealType: MealType) => {
+  const addPhotoEntries = async (foods: Food[], mealType: MealType, aiPhotoExplanation: MealEstimateExplanation) => {
     const loggedAt = Date.now()
-    const diaryEntries: DiaryEntry[] = foods.map((food, index) => ({ id: crypto.randomUUID(), date: options.selectedDateKey, meal: mealType, food, servings: 1, loggedAt: loggedAt + index, source: 'nourish-photo' }))
-    if (await options.commitNutritionMutation({ type: 'addEntries', entries: diaryEntries })) {
+    const diaryEntries: DiaryEntry[] = foods.map((food, index) => ({ id: crypto.randomUUID(), date: options.selectedDateKey, meal: mealType, food, servings: 1, loggedAt: loggedAt + index, source: 'nourish-photo', aiPhotoExplanation }))
+    const persisted = await options.commitNutritionMutation({ type: 'addEntries', entries: diaryEntries })
+    if (persisted) {
       options.closePhotoMeal()
       options.showToast(`Estimated ${mealType.toLowerCase()} logged from ${foods.length} item${foods.length === 1 ? '' : 's'}`)
     }
+    return persisted
   }
 
   const deleteDiaryEntry = (entryId: string) => options.commitNutritionMutation({ type: 'deleteEntry', id: entryId })

@@ -3,7 +3,6 @@ import { AppHeader } from './components/layout/AppHeader'
 import { AppViewContent } from './components/layout/AppViewContent'
 import { DateNavigator } from './components/layout/DateNavigator'
 import { DesktopSidebar } from './components/layout/DesktopSidebar'
-import { FloatingPhotoButton } from './components/layout/FloatingPhotoButton'
 import { MobileNavigation } from './components/layout/MobileNavigation'
 import { NourishToast } from './components/layout/NourishToast'
 import { EntryDetailModal } from './features/diary/EntryDetailModal'
@@ -36,7 +35,6 @@ export default function App() {
       <AppViewContent activeView={navigation.activeView} dateEntries={selectedDateEntries} nutritionData={nutritionData} selectedDateKey={navigation.selectedDateKey} onDeleteEntry={diaryMutations.deleteDiaryEntry} onEntrySelect={dialogs.openEntryDetails} onGoalsSave={saveNutritionGoals} onPhotoMeal={dialogs.openPhotoMeal} onQuickAdd={dialogs.openQuickAdd} onViewDiary={() => navigation.setActiveView('diary')} />
     </main>
     <MobileNavigation activeView={navigation.activeView} onViewChange={navigation.setActiveView} />
-    <FloatingPhotoButton onClick={dialogs.openPhotoMeal} />
     {dialogs.quickAddMeal && <QuickAddModal mealType={dialogs.quickAddMeal} onClose={dialogs.closeQuickAdd} onLog={diaryMutations.addQuickEntry} />}
     {dialogs.photoMealType && <PhotoMealModal defaultMealType={dialogs.photoMealType} onClose={dialogs.closePhotoMeal} onLog={diaryMutations.addPhotoEntries} />}
     {dialogs.selectedDiaryEntry && <EntryDetailModal diaryEntry={dialogs.selectedDiaryEntry} onClose={dialogs.closeEntryDetails} />}

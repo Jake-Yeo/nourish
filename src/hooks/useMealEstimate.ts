@@ -2,9 +2,9 @@ import { useState } from 'react'
 import { clearPhotoDraft } from '../services/photoDraft/clearPhotoDraft'
 import type { Food, MealType, Nutrients } from '../types'
 import { createEmptyNutrients } from '../lib/nutrition/createEmptyNutrients'
-import type { CapturedPhoto, MealEstimate, PhotoMealStep } from '../types/photoMeal'
+import type { CapturedPhoto, MealEstimate, MealEstimateExplanation, PhotoMealStep } from '../types/photoMeal'
 
-export function useMealEstimate(onLog: (foods: Food[], mealType: MealType) => void) {
+export function useMealEstimate(onLog: (foods: Food[], mealType: MealType, explanation: MealEstimateExplanation) => Promise<boolean>) {
   const [activeStep, setActiveStep] = useState<PhotoMealStep>('capture')
   const [mealEstimate, setMealEstimate] = useState<MealEstimate | null>(null)
   const [analysisError, setAnalysisError] = useState('')
@@ -32,11 +32,11 @@ export function useMealEstimate(onLog: (foods: Food[], mealType: MealType) => vo
     const totals = items.reduce((sum, item) => { for (const name of Object.keys(sum) as Array<keyof Nutrients>) sum[name] += item.nutrients[name]; return sum }, createEmptyNutrients())
     return { ...currentEstimate, items, totals }
   })
-  const logEstimatedMeal = (mealType: MealType) => {
+  const logEstimatedMeal = async (mealType: MealType) => {
     if (!mealEstimate) return
     const foods = mealEstimate.items.map((item): Food => ({ id: `photo-${crypto.randomUUID()}`, name: item.name, brand: `AI estimate · ${mealEstimate.confidence} confidence`, servingLabel: item.portion, servingGrams: 0, nutrients: item.nutrients, source: 'custom' }))
-    clearPhotoDraft().catch(() => undefined)
-    onLog(foods, mealType)
+    const persisted = await onLog(foods, mealType, { confidence: mealEstimate.confidence, summary: mealEstimate.summary, assumptions: mealEstimate.assumptions })
+    if (persisted) await clearPhotoDraft()
   }
   return { activeStep, analysisError, analyzeMealPhotos, logEstimatedMeal, mealEstimate, setActiveStep, updateEstimatedItem, updateEstimatedNutrient }
 }

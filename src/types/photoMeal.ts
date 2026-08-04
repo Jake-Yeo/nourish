@@ -1,4 +1,4 @@
-import type { Nutrients } from '../types'
+import type { AiPhotoExplanation, Nutrients } from '../types'
 
 export type CapturedPhoto = { id: string; dataUrl: string; note: string }
 export type MealEstimateItem = { name: string; portion: string; nutrients: Nutrients }
@@ -10,4 +10,6 @@ export type MealEstimate = {
   items: MealEstimateItem[]
   totals: Nutrients
 }
+
+export type MealEstimateExplanation = Pick<AiPhotoExplanation, 'confidence' | 'summary' | 'assumptions'>
 export type PhotoMealStep = 'capture' | 'analyzing' | 'review'

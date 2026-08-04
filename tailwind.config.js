@@ -8,7 +8,7 @@ export default {
         'progress-track': '#EDF1EE', destructive: '#9B4147', 'destructive-soft': '#FAE8E9',
         warning: '#836328', 'warning-soft': '#FFF8E8', info: '#32639B', 'info-soft': '#E8F2FF',
         ai: '#6950AE', 'ai-soft': '#EEE9FF', overlay: 'rgb(12 25 20 / 48%)', 'muted-icon': '#87928D',
-        protein: '#7856D8', carbs: '#E39B37', fat: '#E66B72', fiber: '#269A6D',
+        protein: '#7856D8', carbs: '#4A90E2', fat: '#D77BA7', fiber: '#269A6D',
         lunch: '#C0791D', 'lunch-soft': '#FFF1DA', dinner: '#7055BF', 'dinner-soft': '#E9E5F8',
         snacks: '#B8535A', 'snacks-soft': '#F9E4E5', chart: '#BAD4C9', 'chart-copy': '#C5DED3',
       },
