@@ -12,17 +12,21 @@ export function DailyWeightEstimateCard({ dateKey, entries, allEntries, goals, w
   const todayDateKey = getTodayDateKey()
   const estimate = getDailyWeightEstimate(dateKey, todayDateKey, entries, goals)
   const startDate = weightChangeStartDate ?? getDefaultWeightChangeRange().startDate
-  const total = dateKey <= todayDateKey ? getTotalWeightEstimate(startDate, dateKey, allEntries, goals) : null
-  const description = estimate.status === 'unavailable' ? 'Unavailable for future dates. No projections.'
-    : estimate.status === 'empty' ? 'No estimate · no meals logged.'
-      : 'usesCalorieGoal' in estimate && estimate.usesCalorieGoal ? 'Uses your calorie goal because today is incomplete.'
+  const total = getTotalWeightEstimate(startDate, dateKey, todayDateKey, allEntries, goals)
+  const description = estimate.status === 'empty' ? 'No estimate · no meals logged.'
+    : estimate.isProjection ? 'Projects your calorie goal unless logged calories exceed it.'
+      : estimate.usesCalorieGoal ? 'Uses your calorie goal because today is incomplete.'
         : 'Based only on this day’s calorie balance.'
   const label = estimate.status !== 'estimate' ? 'No estimate'
-    : estimate.pounds > 0 ? 'Estimated gain'
-      : estimate.pounds < 0 ? 'Estimated loss' : 'No estimated change'
+    : estimate.isProjection ? estimate.pounds > 0 ? 'Projected gain' : estimate.pounds < 0 ? 'Projected loss' : 'No projected change'
+      : estimate.pounds > 0 ? 'Estimated gain' : estimate.pounds < 0 ? 'Estimated loss' : 'No estimated change'
   const value = estimate.status === 'estimate' && estimate.pounds !== 0 ? `${Math.abs(estimate.pounds).toFixed(2)} lb` : null
   const totalLabel = total ? total.pounds > 0 ? 'Total estimated gain' : total.pounds < 0 ? 'Total estimated loss' : 'No total estimated change' : null
   const totalValue = total ? `${Math.abs(total.pounds).toFixed(2)} lb` : null
+  const loggedDays = total ? total.loggedDays - total.projectedDays : 0
+  const totalNote = !total || total.projectedDays === 0 ? null
+    : total.projectedDays === 1 ? `Includes today’s ${total.usesCalorieGoal ? 'calorie goal because the day is incomplete' : 'logged calories'}.`
+      : `Includes ${total.projectedDays} projected days using your calorie goal unless logged calories exceed it.`
 
   return <Card variant="soft" aria-label="Selected day estimated weight change">
     <div className="flex items-start gap-control-wide">
@@ -34,8 +38,8 @@ export function DailyWeightEstimateCard({ dateKey, entries, allEntries, goals, w
           {value && <strong className="text-section text-primary-strong">{value}</strong>}
         </div>
         <Typography variant="muted" className="mt-control">{description}</Typography>
-        {total && <div className="mt-content flex flex-wrap items-baseline justify-between gap-control border-t border-border pt-control-wide"><Typography variant="caption" className="font-bold">{totalLabel}</Typography><strong className="text-body text-primary-strong">{totalValue}</strong><Typography variant="caption" className="w-full">From {new Date(`${startDate}T12:00:00`).toLocaleDateString()} through this day · {total.loggedDays} logged day{total.loggedDays === 1 ? '' : 's'}.</Typography></div>}
-        {!total && dateKey <= todayDateKey && <Typography variant="caption" className="mt-content">Choose {new Date(`${startDate}T12:00:00`).toLocaleDateString()} or later to see the total from your saved start date.</Typography>}
+        {total && <div className="mt-content flex flex-wrap items-baseline justify-between gap-control border-t border-border pt-control-wide"><Typography variant="caption" className="font-bold">{totalLabel}</Typography><strong className="text-body text-primary-strong">{totalValue}</strong><Typography variant="caption" className="w-full">From {new Date(`${startDate}T12:00:00`).toLocaleDateString()} through this day · {loggedDays} logged day{loggedDays === 1 ? '' : 's'}. {totalNote}</Typography></div>}
+        {!total && <Typography variant="caption" className="mt-content">Choose {new Date(`${startDate}T12:00:00`).toLocaleDateString()} or later to see the total from your saved start date.</Typography>}
       </div>
     </div>
   </Card>
