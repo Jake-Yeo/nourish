@@ -1,11 +1,12 @@
-export function buildMealAnalysisContent(photos, overallMealNote) {
-  const analysisContent = [{
-    type: 'input_text',
-    text: `Estimate this meal for a nutrition diary. Analyze all photos as different views or components of ONE meal, not separate meals. Use the user's notes to resolve portion size, ingredients, meat cut, sauces, preparation, and whether an item was fully eaten. Avoid double counting food visible in multiple angles. Give realistic point estimates, not ranges. Be conservative about visual certainty and explicitly mention important assumptions. Overall meal note: ${String(overallMealNote || 'None')}`,
-  }]
-  photos.forEach((photo, photoIndex) => {
-    analysisContent.push({ type: 'input_text', text: `Photo ${photoIndex + 1} note: ${String(photo.note || 'No note')}` })
-    analysisContent.push({ type: 'input_image', image_url: String(photo.dataUrl), detail: 'high' })
-  })
-  return analysisContent
+import { mealEstimateSchema } from './mealEstimateSchema.mjs'
+import { normalizeBoundedText } from './normalizeBoundedText.mjs'
+
+const promptText = (value, limit, fallback) => normalizeBoundedText(value, limit) || fallback
+
+export function buildMealAnalysisContent(item, overallMealNote) {
+  const angleNotes = item.photos.map((photo, index) => `Angle ${index + 1}: ${promptText(photo.note, 500, 'No note')}`).join('\n')
+  const itemName = promptText(item.name, 200, 'Unknown')
+  const description = promptText(item.description, 1_000, 'None')
+  const mealNote = promptText(overallMealNote, 2_000, 'None')
+  return `Estimate exactly ONE food item for an editable nutrition diary. The attached contact sheet contains every supplied angle of the same item; do not create multiple items. Use photo evidence to estimate the photographed portion and avoid double counting repeated views. Use the typed item name and description when supplied. If the item name, item description, overall meal note, or photo notes identify a restaurant, cafe, takeout business, brand, or menu item, you MUST use the browser tools to attempt public-web research before estimating. Search and inspect the official restaurant, menu, brand, or manufacturer site first; use other credible public sources only when official nutrition is unavailable. Do not use vision tools to search the web. Do not browse automatically for an unidentified homemade or generic food. Do no non-research actions. In researchDisclosure, set internetUsed true only if public-web information actually informed the estimate; otherwise false. List only actual public-web sources used as objects with a bounded title and, only when known, the real public HTTPS URL. Never invent or guess a URL. Use an empty source list when no web information informed the estimate. The disclosure summary must concisely describe the evidence actually used. When internetUsed is false, it MUST specifically explain why research was not used, such as no identifiable restaurant or brand, no public nutrition information found after attempting research, or web search being unavailable; it must not merely say that photos and notes were used. Never pretend research occurred. This is your disclosure, not independently verified provenance. Return ONLY one strict JSON object matching this schema, with no markdown or commentary:\n${JSON.stringify(mealEstimateSchema)}\nItem name: ${itemName}\nItem description: ${description}\nOverall meal note: ${mealNote}\nPhoto notes:\n${angleNotes}`
 }

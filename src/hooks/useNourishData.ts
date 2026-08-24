@@ -4,7 +4,8 @@ import type { DataMutation } from '../services/nutritionData/DataMutation'
 import { fetchNutritionData } from '../services/nutritionData/fetchNutritionData'
 import { loadCachedNutritionData } from '../services/nutritionData/loadCachedNutritionData'
 import { mutateNutritionData } from '../services/nutritionData/mutateNutritionData'
-import type { AppData } from '../types'
+import type { AppData, DiaryEntry } from '../types'
+import type { CaptureFoodItem } from '../types/photoMeal'
 
 export function useNourishData(showToast: (message: string) => void) {
   const [nutritionData, setNutritionData] = useState<AppData>(loadCachedNutritionData)
@@ -44,5 +45,18 @@ export function useNourishData(showToast: (message: string) => void) {
     }
   }
 
-  return { nutritionData, commitNutritionMutation }
+  const commitPhotoMeal = async (entries: DiaryEntry[], items: CaptureFoodItem[], mealNote: string, analysisJobId?: string) => {
+    try {
+      const response = await fetch('/api/photo-meals', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ mealId: crypto.randomUUID(), analysisJobId, entries, items: items.map((item, index) => ({ ...item, entryId: entries[index]?.id })), mealNote }) })
+      const result = await response.json()
+      if (!response.ok) throw new Error(result.error || 'Could not save meal photos.')
+      setNutritionData(result.data)
+      return true
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : 'Could not save meal photos.')
+      return false
+    }
+  }
+
+  return { nutritionData, commitNutritionMutation, commitPhotoMeal }
 }

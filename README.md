@@ -1,29 +1,31 @@
 # Nourish
 
-Private, photo-first nutrition PWA for Jake. Photograph a meal from multiple angles, annotate each image, receive an AI macro estimate, review it, and save it to a shared nutrition diary.
+A photo-first nutrition PWA for capturing meals, estimating nutrition, reviewing results, and maintaining a personal food diary.
 
-Built with React, TypeScript, Tailwind CSS, Vite, Express, and SQLite. See `AGENTS.md` for architecture constraints and `STYLE.md` for the interface system.
+## Features
 
-The UI uses central semantic tokens, reusable stateless primitives, CVA variants, and feature modules under 100 lines. Run `npm run check` before deployment.
+- Capture multiple meal photos and add context for each image.
+- Request AI-assisted macro estimates, then review and edit estimates before logging.
+- Store diary entries, goals, saved meals, and sync state in a server-side SQLite database.
+- Run long-lived meal-analysis and import workflows on the server so they can continue after the PWA closes.
 
-## Run
+## Stack
+
+React, TypeScript, Vite, Tailwind CSS, Express, SQLite, and the OpenAI Responses API.
+
+## Run locally
 
 ```bash
 npm install
-npm run build
-OPENAI_API_KEY=... npm run serve
+OPENAI_API_KEY=your_key npm run serve
 ```
 
-The server binds to `127.0.0.1:4174` by default. Override with `PORT` and optionally `OPENAI_VISION_MODEL` (defaults to `gpt-5.6-luna`). Never place API keys in frontend code or committed files.
+The server defaults to `127.0.0.1:4174`. Keep API keys in a local environment file, never in client code or committed files.
 
-`NOURISH_ENV_FILE=/absolute/path/to/.env` may point the server at an existing private environment file. The Ithacus launcher uses Jake's existing mode-600 Callumployed environment file without copying its contents.
+## Checks
 
-## Data
+```bash
+npm run check
+```
 
-- Diary entries, goals, and MyNetDiary sync state: server-side SQLite at `data/nourish.sqlite`
-- Browser storage: disposable startup cache and one-time migration source only
-- Photo drafts: IndexedDB
-- Meal photos: sent to the local server only when Analyze is tapped
-- Vision analysis: OpenAI Responses API; estimates must be reviewed before logging
-
-Nutrition estimates are informational and can vary substantially based on hidden ingredients and portion ambiguity.
+> Nutrition estimates are informational and require user review before being saved.

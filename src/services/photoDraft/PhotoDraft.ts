@@ -1,3 +1,3 @@
-import type { CapturedPhoto } from '../../types/photoMeal'
+import type { CaptureFoodItem } from '../../types/photoMeal'
 
-export type PhotoDraft = { photos: CapturedPhoto[]; mealNote: string; meal: string }
+export type PhotoDraft = { items: CaptureFoodItem[]; mealNote: string; meal: string }

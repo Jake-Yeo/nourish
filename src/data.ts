@@ -1,5 +1,11 @@
 import type { Goals } from './types'
 
+export const defaultMaintenanceAdjustmentThreshold = 1700
+
+export function getMaintenanceAdjustmentThreshold(goals: Goals) {
+  return goals.maintenanceAdjustmentThreshold ?? defaultMaintenanceAdjustmentThreshold
+}
+
 export const defaultGoals: Goals = {
   calories: 2200,
   protein: 150,
@@ -14,4 +20,5 @@ export const defaultGoals: Goals = {
   calcium: 1000,
   iron: 18,
   maintenanceCalories: 2420,
+  maintenanceAdjustmentThreshold: defaultMaintenanceAdjustmentThreshold,
 }

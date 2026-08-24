@@ -7,9 +7,9 @@ import { CalorieProgressRing } from '../../components/nutrition/CalorieProgressR
 import { Card } from '../../components/ui/Card'
 import { Typography } from '../../components/ui/Typography'
 
-type DailySummaryCardProps = { entries: DiaryEntry[]; goals: Goals; onPhotoMeal: () => void; onQuickAdd: () => void }
+type DailySummaryCardProps = { entries: DiaryEntry[]; goals: Goals; onPhotoMeal: () => void; onOpenAnalysis: () => void; onQuickAdd: () => void }
 
-export function DailySummaryCard({ entries, goals, onPhotoMeal, onQuickAdd }: DailySummaryCardProps) {
+export function DailySummaryCard({ entries, goals, onOpenAnalysis, onPhotoMeal, onQuickAdd }: DailySummaryCardProps) {
   const totalNutrients = getTotalNutrients(entries)
   const loggedMealCount = new Set(entries.map(entry => entry.meal)).size
   const calorieCompletionPercentage = Math.round(totalNutrients.calories / goals.calories * 100)
@@ -27,6 +27,7 @@ export function DailySummaryCard({ entries, goals, onPhotoMeal, onQuickAdd }: Da
       <div className="flex flex-col items-center"><strong className="text-xl">{goals.calories.toLocaleString()}</strong><Typography variant="caption">Daily goal</Typography></div>
     </div>
     <Button fullWidth className="col-span-full bg-linear-to-br from-primary to-fiber" onClick={() => onPhotoMeal()}><Camera className="w-5" />Photograph meal</Button>
+    <Button fullWidth variant="secondary" className="col-span-full" onClick={onOpenAnalysis}><Sparkles className="w-5" />Analysis Center</Button>
     <Button variant="ghost" className="col-span-full" onClick={() => onQuickAdd()}>Add a correction manually</Button>
   </Card>
 }

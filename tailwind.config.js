@@ -38,7 +38,7 @@ export default {
       maxWidth: { app: '52.5rem', modal: '38.75rem', 'photo-modal': '42.5rem' },
       gridTemplateColumns: {
         'date-navigation': '2.625rem 1fr 2.625rem', 'dashboard-summary': '1fr 7rem',
-        'dashboard-summary-wide': '1fr 8rem', 'diary-row': 'auto 1fr auto auto', 'summary-value': '1fr auto',
+        'dashboard-summary-wide': '1fr 8rem', 'diary-row': 'auto auto 1fr auto auto', 'summary-value': '1fr auto',
         'app-shell': '15rem 1fr', 'captured-photo': '8.25rem 1fr', 'estimate-item': 'auto 1fr',
       },
     },

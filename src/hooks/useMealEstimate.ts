@@ -1,42 +1,26 @@
-import { useState } from 'react'
+import type { MealAnalysisJob } from '../types/photoMeal'
+import { useRef, useState } from 'react'
 import { clearPhotoDraft } from '../services/photoDraft/clearPhotoDraft'
-import type { Food, MealType, Nutrients } from '../types'
-import { createEmptyNutrients } from '../lib/nutrition/createEmptyNutrients'
-import type { CapturedPhoto, MealEstimate, MealEstimateExplanation, PhotoMealStep } from '../types/photoMeal'
+import type { MealType } from '../types'
+import type { CaptureFoodItem } from '../types/photoMeal'
 
-export function useMealEstimate(onLog: (foods: Food[], mealType: MealType, explanation: MealEstimateExplanation) => Promise<boolean>) {
-  const [activeStep, setActiveStep] = useState<PhotoMealStep>('capture')
-  const [mealEstimate, setMealEstimate] = useState<MealEstimate | null>(null)
+type Replacement = { mealId: string; itemId: string; entryId: string }
+export function useMealEstimate() {
   const [analysisError, setAnalysisError] = useState('')
-
-  const analyzeMealPhotos = async (capturedPhotos: CapturedPhoto[], mealNote: string) => {
-    if (!capturedPhotos.length) return setAnalysisError('Add at least one photo of your meal.')
-    setActiveStep('analyzing')
-    setAnalysisError('')
+  const [isQueuing, setIsQueuing] = useState(false)
+  const attemptKey = useRef<string | null>(null)
+  const queueMealAnalysis = async (items: CaptureFoodItem[], note: string, mealType: MealType, date: string, replacement?: Replacement) => {
+    if (!items.length) { setAnalysisError('Add at least one food item.'); return false }
+    setIsQueuing(true); setAnalysisError('')
+    attemptKey.current ||= crypto.randomUUID()
     try {
-      const analysisResponse = await fetch('/api/analyze-meal', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ photos: capturedPhotos, note: mealNote }) })
-      const analysisResult = await analysisResponse.json()
-      if (!analysisResponse.ok) throw new Error(analysisResult.error || 'Analysis failed.')
-      setMealEstimate(analysisResult)
-      setActiveStep('review')
-    } catch (error) {
-      setAnalysisError(error instanceof Error ? error.message : 'Analysis failed.')
-      setActiveStep('capture')
-    }
+      const response = await fetch('/api/analyze-meal', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ items, note, mealType, date, replacement, idempotencyKey: attemptKey.current }) })
+      const result = await response.json()
+      if (!response.ok) throw new Error(result.error || 'Could not queue analysis.')
+      const job = result as MealAnalysisJob
+      attemptKey.current = null; if (!replacement) await clearPhotoDraft(); return job
+    } catch (error) { setAnalysisError(error instanceof Error ? error.message : 'Could not queue analysis.'); return null }
+    finally { setIsQueuing(false) }
   }
-
-  const updateEstimatedItem = (itemIndex: number, fieldName: 'name' | 'portion', value: string) => setMealEstimate(currentEstimate => currentEstimate ? { ...currentEstimate, items: currentEstimate.items.map((item, index) => index === itemIndex ? { ...item, [fieldName]: value } : item) } : null)
-  const updateEstimatedNutrient = (itemIndex: number, nutrientName: keyof Nutrients, value: number) => setMealEstimate(currentEstimate => {
-    if (!currentEstimate) return null
-    const items = currentEstimate.items.map((item, index) => index === itemIndex ? { ...item, nutrients: { ...item.nutrients, [nutrientName]: value } } : item)
-    const totals = items.reduce((sum, item) => { for (const name of Object.keys(sum) as Array<keyof Nutrients>) sum[name] += item.nutrients[name]; return sum }, createEmptyNutrients())
-    return { ...currentEstimate, items, totals }
-  })
-  const logEstimatedMeal = async (mealType: MealType) => {
-    if (!mealEstimate) return
-    const foods = mealEstimate.items.map((item): Food => ({ id: `photo-${crypto.randomUUID()}`, name: item.name, brand: `AI estimate · ${mealEstimate.confidence} confidence`, servingLabel: item.portion, servingGrams: 0, nutrients: item.nutrients, source: 'custom' }))
-    const persisted = await onLog(foods, mealType, { confidence: mealEstimate.confidence, summary: mealEstimate.summary, assumptions: mealEstimate.assumptions })
-    if (persisted) await clearPhotoDraft()
-  }
-  return { activeStep, analysisError, analyzeMealPhotos, logEstimatedMeal, mealEstimate, setActiveStep, updateEstimatedItem, updateEstimatedNutrient }
+  return { analysisError, isQueuing, queueMealAnalysis }
 }

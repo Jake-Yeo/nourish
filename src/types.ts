@@ -49,12 +49,14 @@ export type DiaryEntry = {
 
 export type Goals = Nutrients & {
   maintenanceCalories: number
+  maintenanceAdjustmentThreshold: number
 }
 
 export type AppData = {
   entries: DiaryEntry[]
   goals: Goals
   lastMyNetDiarySync?: number
+  weightChangeStartDate?: string
 }
 
 export const mealTypes: MealType[] = ['Breakfast', 'Lunch', 'Dinner', 'Snacks']

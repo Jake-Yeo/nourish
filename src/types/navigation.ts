@@ -1,1 +1,1 @@
-export type NourishView = 'today' | 'diary' | 'insights' | 'goals'
+export type NourishView = 'today' | 'diary' | 'analysis' | 'insights' | 'goals'
