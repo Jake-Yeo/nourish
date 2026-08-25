@@ -1,5 +1,5 @@
 import { databaseConnection } from '../../database/databaseConnection.mjs'
-import { createAnalysisJob, getAnalysisJob, listAnalysisJobs, retryAnalysisJob } from '../../database/analysisJobStore.mjs'
+import { createAnalysisJob, deleteAnalysisJob, getAnalysisJob, listAnalysisJobs, rerunAnalysisJob, retryAnalysisJob } from '../../database/analysisJobStore.mjs'
 import { scheduleAnalysisJob } from '../../vision/processAnalysisJob.mjs'
 
 const imagePattern = /^data:image\/(jpeg|jpg|png|webp);base64,[A-Za-z0-9+/=]+$/
@@ -28,13 +28,13 @@ function normalizeSource(body) {
     ...(body.replacement ? { replacement: { mealId: body.replacement.mealId, itemId: body.replacement.itemId, entryId: body.replacement.entryId } } : {}),
   }
 }
-function validateRequest(body) {
+function validateRequest(body, requireIdempotencyKey = true) {
   const items = Array.isArray(body?.items) ? body.items : []
   const itemError = validateItems(items)
   if (itemError) return itemError
   if (!mealTypes.has(body?.mealType)) return 'Choose a meal type.'
   if (!/^\d{4}-\d{2}-\d{2}$/.test(String(body?.date || ''))) return 'Choose a valid diary date.'
-  if (!idempotencyPattern.test(String(body?.idempotencyKey || ''))) return 'A valid analysis attempt key is required.'
+  if (requireIdempotencyKey && !idempotencyPattern.test(String(body?.idempotencyKey || ''))) return 'A valid analysis attempt key is required.'
   if (!validReplacement(body?.replacement)) return 'Saved meal replacement context is invalid.'
   return null
 }
@@ -57,4 +57,19 @@ export function retryMealAnalysis(request, response) {
   if (!job) return response.status(409).json({ error: 'Only failed or interrupted analyses can be retried.' })
   scheduleAnalysisJob(job.id)
   return response.status(202).json(job)
+}
+export function rerunMealAnalysis(request, response) {
+  const error = validateRequest(request.body, false)
+  if (error) return response.status(error.includes('large') ? 413 : 400).json({ error })
+  const job = rerunAnalysisJob(databaseConnection, request.params.jobId, normalizeSource(request.body))
+  if (!job) return response.status(409).json({ error: 'Only completed, unlogged analyses can be edited and re-run.' })
+  scheduleAnalysisJob(job.id)
+  return response.status(202).json(job)
+}
+export function deleteMealAnalysis(request, response) {
+  const existing = getAnalysisJob(databaseConnection, request.params.jobId)
+  if (!existing) return response.status(404).json({ error: 'Meal analysis was not found.' })
+  if (existing.loggedAt) return response.status(409).json({ error: 'Logged analyses must remain linked to their Diary entries.' })
+  if (existing.status === 'queued' || existing.status === 'running') return response.status(409).json({ error: 'Wait for this analysis to finish before deleting it.' })
+  return deleteAnalysisJob(databaseConnection, existing.id) ? response.status(204).end() : response.status(409).json({ error: 'Could not delete this analysis.' })
 }

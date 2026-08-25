@@ -9,7 +9,7 @@ import { mutateApplicationData } from './server/routes/data/mutateApplicationDat
 import { getMyNetDiaryCredentials } from './server/routes/credentials/getMyNetDiaryCredentials.mjs'
 import { saveMyNetDiaryCredentials } from './server/routes/credentials/saveMyNetDiaryCredentials.mjs'
 import { latestMyNetDiarySync, queueMyNetDiarySync } from './server/routes/sync/myNetDiarySyncRoutes.mjs'
-import { analysisJob, analysisJobs, analyzeMeal, retryMealAnalysis } from './server/routes/vision/analyzeMeal.mjs'
+import { analysisJob, analysisJobs, analyzeMeal, deleteMealAnalysis, rerunMealAnalysis, retryMealAnalysis } from './server/routes/vision/analyzeMeal.mjs'
 import { interruptUnfinishedAnalysisJobs } from './server/database/analysisJobStore.mjs'
 import { shutdownAnalysisWorker } from './server/vision/processAnalysisJob.mjs'
 import { interruptMyNetDiarySyncJobs } from './server/database/myNetDiarySyncJobStore.mjs'
@@ -32,6 +32,8 @@ application.post('/api/analyze-meal', analyzeMeal)
 application.get('/api/analysis-jobs', analysisJobs)
 application.get('/api/analysis-jobs/:jobId', analysisJob)
 application.post('/api/analysis-jobs/:jobId/retry', retryMealAnalysis)
+application.post('/api/analysis-jobs/:jobId/rerun', rerunMealAnalysis)
+application.delete('/api/analysis-jobs/:jobId', deleteMealAnalysis)
 application.post('/api/photo-meals', createPhotoMeal)
 application.get('/api/photo-meals/storage', photoStorageUsage)
 application.delete('/api/photo-meals', deleteAllPhotos)

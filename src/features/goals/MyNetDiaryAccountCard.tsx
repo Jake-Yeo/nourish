@@ -16,11 +16,11 @@ export function MyNetDiaryAccountCard() {
   return <Card variant="flat">
     <div className="flex items-center gap-control-wide"><div className="grid size-icon-small shrink-0 place-items-center rounded-icon bg-primary-soft text-primary"><KeyRound className="w-5" /></div><Stack gap="control"><strong className="text-body">MyNetDiary login</strong><Typography variant="caption">{accountStatus}</Typography></Stack></div>
     <Typography variant="caption" className="my-control-wide">Nourish stores this login in the Mac’s Keychain and uses it only when MyNetDiary asks the sync browser to sign in.</Typography>
-    <Stack gap="controlWide">
+    <fieldset disabled={credentials.isSavingCredentials} className="m-0 min-w-0 border-0 p-0"><Stack gap="controlWide">
       <Field label="Email or account name"><Input type="text" autoCapitalize="none" autoCorrect="off" value={credentials.accountName} onChange={event => credentials.setAccountName(event.target.value)} placeholder={isConfigured ? 'Enter to replace saved login' : 'MyNetDiary email'} /></Field>
       <Field label="Password"><Input type="password" value={credentials.password} onChange={event => credentials.setPassword(event.target.value)} placeholder={isConfigured ? 'Enter to replace saved password' : 'MyNetDiary password'} /></Field>
-      <Button variant="secondary" fullWidth disabled={credentials.isSavingCredentials || !credentials.accountName || !credentials.password} onClick={credentials.saveMyNetDiaryCredentials}>{buttonLabel}</Button>
+      <Button variant="secondary" fullWidth loading={credentials.isSavingCredentials} disabled={!credentials.accountName || !credentials.password} onClick={() => void credentials.saveMyNetDiaryCredentials()}>{buttonLabel}</Button>
       {credentials.credentialMessage && <Typography variant="caption" className="text-primary-strong">{credentials.credentialMessage}</Typography>}
-    </Stack>
+    </Stack></fieldset>
   </Card>
 }
