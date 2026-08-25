@@ -36,7 +36,24 @@ export function AnalysisView({ selectedDateKey, queuedJob, onLog, onOpenDiary, o
   }
   useEffect(() => { setSelectedJob(null); setDetailError('') }, [selectedDateKey])
   useEffect(() => { if (queuedJob?.status === 'queued') { setSelectedJob(null); setDetailError('') } }, [queuedJob])
-  if (selectedJob) return <div className="grid gap-content"><Button variant="secondary" className="w-fit" onClick={() => setSelectedJob(null)}><ChevronLeft className="w-5" />All analyses</Button>{detailError && <Card variant="flat"><Typography className="text-destructive">{detailError}</Typography></Card>}<AnalysisJobDetail job={selectedJob} onDelete={removeJob} onLog={async (job, estimate) => { const saved = await onLog(job, estimate); if (saved) await refresh(); return saved }} onOpenDiary={onOpenDiary} onRefresh={refresh} onRerun={onRerun} /></div>
+  if (selectedJob) return <div className="grid gap-content"><Button variant="secondary" className="w-fit" onClick={() => setSelectedJob(null)}><ChevronLeft className="w-5" />All analyses</Button>{detailError && <Card variant="flat"><Typography className="text-destructive">{detailError}</Typography></Card>}<AnalysisJobDetail job={selectedJob} onDelete={removeJob} onLog={async (job, estimate) => {
+    const saved = await onLog(job, estimate)
+    if (saved) {
+      setSelectedJob(current => current?.id === job.id ? { ...current, loggedAt: Date.now() } : current)
+      await refresh()
+      try {
+        const refreshedJob = await fetchAnalysisJob(job.id)
+        setSelectedJob(current => current?.id === job.id ? refreshedJob : current)
+      } catch {}
+    }
+    return saved
+  }} onOpenDiary={onOpenDiary} onRefresh={async () => {
+    await refresh()
+    try {
+      const refreshedJob = await fetchAnalysisJob(selectedJob.id)
+      setSelectedJob(current => current?.id === selectedJob.id ? refreshedJob : current)
+    } catch {}
+  }} onRerun={onRerun} /></div>
   const active = datedJobs.filter(job => job.status === 'queued' || job.status === 'running')
   const history = datedJobs.filter(job => job.status !== 'queued' && job.status !== 'running')
   const card = (job: MealAnalysisJob) => <AnalysisJobCard disabled={openingJobId !== null} isOpening={openingJobId === job.id} job={job} key={job.id} onOpen={() => void openJob(job)} />
