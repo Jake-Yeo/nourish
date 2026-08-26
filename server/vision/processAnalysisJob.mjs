@@ -43,7 +43,7 @@ export async function processAnalysisJob(id) {
     const estimate = item => requestMealEstimate(item, job.source.note, abortController.signal, handle => ownProcess(id, handle))
     const estimates = await mapWithConcurrency(job.source.items, 2, estimate)
     completeAnalysisJob(databaseConnection, id, combineEstimates(job.source.items, estimates))
-  } catch (error) { failAnalysisJob(databaseConnection, id, error instanceof Error ? error.message : 'OpenClaw returned an invalid nutrition estimate.') }
+  } catch (error) { failAnalysisJob(databaseConnection, id, error instanceof Error ? error.message : 'Hermes returned an invalid nutrition estimate.') }
 }
 export function scheduleAnalysisJob(id) { if (acceptingWork) setImmediate(() => void processAnalysisJob(id)) }
 export async function shutdownAnalysisWorker(reason = 'Nourish stopped before this analysis finished.') {
