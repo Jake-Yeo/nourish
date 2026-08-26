@@ -29,7 +29,11 @@ export function combineEstimates(groups, estimates) {
   const totals = items.reduce((sum, item) => Object.fromEntries(Object.keys(item.nutrients).map(key => [key, (sum[key] || 0) + item.nutrients[key]])), {})
   const confidence = estimates.reduce((lowest, estimate) => confidenceRank[estimate.confidence] < confidenceRank[lowest] ? estimate.confidence : lowest, 'high')
   const internetUsed = estimates.some(estimate => estimate.researchDisclosure.internetUsed)
-  return { mealName: items.map(item => item.name).join(', '), confidence, summary: estimates.map(estimate => estimate.summary).join(' '), assumptions: estimates.flatMap(estimate => estimate.assumptions), items, totals, researchDisclosure: { internetUsed, sources: uniqueSources(estimates), summary: disclosureSummary(estimates) } }
+  const calorieBreakdown = {
+    explanation: estimates.map((estimate, index) => estimates.length > 1 ? `${items[index].name}: ${estimate.calorieBreakdown.explanation}` : estimate.calorieBreakdown.explanation).join('\n\n'),
+    components: estimates.flatMap((estimate, index) => estimate.calorieBreakdown.components.map(component => estimates.length > 1 ? { ...component, name: `${items[index].name}: ${component.name}` } : component)),
+  }
+  return { mealName: items.map(item => item.name).join(', '), confidence, summary: estimates.map(estimate => estimate.summary).join(' '), assumptions: estimates.flatMap(estimate => estimate.assumptions), calorieBreakdown, items, totals, researchDisclosure: { internetUsed, sources: uniqueSources(estimates), summary: disclosureSummary(estimates) } }
 }
 export async function processAnalysisJob(id) {
   if (!acceptingWork || !claimAnalysisJob(databaseConnection, id)) return

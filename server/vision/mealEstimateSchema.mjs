@@ -5,6 +5,21 @@ export const mealEstimateSchema = {
   properties: {
     mealName: { type: 'string' }, confidence: { type: 'string', enum: ['low', 'medium', 'high'] },
     summary: { type: 'string' }, assumptions: { type: 'array', maxItems: 20, items: { type: 'string' } },
+    calorieBreakdown: {
+      type: 'object', additionalProperties: false,
+      properties: {
+        explanation: { type: 'string', maxLength: 2_000 },
+        components: {
+          type: 'array', minItems: 1, maxItems: 16,
+          items: {
+            type: 'object', additionalProperties: false,
+            properties: { name: { type: 'string', maxLength: 200 }, portion: { type: 'string', maxLength: 200 }, calories: { type: 'number' }, evidence: { type: 'string', maxLength: 500 } },
+            required: ['name', 'portion', 'calories', 'evidence'],
+          },
+        },
+      },
+      required: ['explanation', 'components'],
+    },
     researchDisclosure: {
       type: 'object', additionalProperties: false,
       properties: { internetUsed: { type: 'boolean' }, summary: { type: 'string', maxLength: 500 }, sources: { type: 'array', maxItems: 12, items: { type: 'object', additionalProperties: false, properties: { title: { type: 'string', maxLength: 200 }, url: { type: 'string', maxLength: 500 } }, required: ['title'] } } },
@@ -20,5 +35,5 @@ export const mealEstimateSchema = {
     },
     totals: nutrientSchema,
   },
-  required: ['mealName', 'confidence', 'summary', 'assumptions', 'researchDisclosure', 'items', 'totals'],
+  required: ['mealName', 'confidence', 'summary', 'assumptions', 'calorieBreakdown', 'researchDisclosure', 'items', 'totals'],
 }

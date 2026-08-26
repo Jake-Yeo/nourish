@@ -4,9 +4,17 @@ const nutrients = ['calories', 'protein', 'carbs', 'fat', 'fiber', 'sugar', 'sod
 
 function uniqueIds(items) { const ids = items.map(item => item.id); return ids.every(id => typeof id === 'string' && id) && new Set(ids).size === ids.length }
 function validNutrients(value) { return value && nutrients.every(name => Number.isFinite(value[name]) && value[name] >= 0) }
+function validCalorieBreakdown(value) {
+  if (value === undefined) return true
+  return typeof value?.explanation === 'string' && value.explanation.length <= 2_000 && Array.isArray(value.components)
+    && value.components.length > 0 && value.components.length <= 192 && value.components.every(component => typeof component?.name === 'string'
+      && component.name.length <= 200 && typeof component.portion === 'string' && component.portion.length <= 200
+      && Number.isFinite(component.calories) && component.calories >= 0 && typeof component.evidence === 'string' && component.evidence.length <= 500)
+}
 function validEntry(entry) {
   const explanation = entry?.aiPhotoExplanation
-  const validExplanation = explanation && ['low', 'medium', 'high'].includes(explanation.confidence) && typeof explanation.summary === 'string' && Array.isArray(explanation.assumptions)
+  const validExplanation = explanation && ['low', 'medium', 'high'].includes(explanation.confidence) && typeof explanation.summary === 'string'
+    && Array.isArray(explanation.assumptions) && validCalorieBreakdown(explanation.calorieBreakdown)
   return typeof entry?.id === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(entry.date) && mealTypes.has(entry.meal) && entry.source === 'nourish-photo' && entry.servings > 0 && entry.loggedAt > 0 && typeof entry.food?.name === 'string' && entry.food.name && typeof entry.food.servingLabel === 'string' && validNutrients(entry.food.nutrients) && validExplanation
 }
 function validItem(item, entryIds) {

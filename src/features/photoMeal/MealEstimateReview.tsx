@@ -8,6 +8,7 @@ import { Typography } from '../../components/ui/Typography'
 import { EstimateItemCard } from './EstimateItemCard'
 import { EstimateSummary } from './EstimateSummary'
 import { SourcesUsedCard } from './SourcesUsedCard'
+import { CalorieReasoningCard } from './CalorieReasoningCard'
 
 type Props = { estimate: MealEstimate; mealType: MealType; actionLabel?: string; requireConfirmation?: boolean; isLogging?: boolean; onDelete?: () => void; isDeleting?: boolean; onFieldChange: (index: number, field: 'name' | 'description' | 'portion', value: string) => void; onLog: (mealType: MealType) => void; onNutrientChange: (index: number, nutrient: keyof Nutrients, value: number) => void }
 
@@ -16,6 +17,7 @@ export function MealEstimateReview({ actionLabel = 'Log estimated meal', estimat
   const [confirmingDelete, setConfirmingDelete] = useState(false)
   return <div>
     <EstimateSummary estimate={estimate} />
+    {estimate.calorieBreakdown && <CalorieReasoningCard breakdown={estimate.calorieBreakdown} />}
     <SectionHeader eyebrow="Detected foods" title="Review before logging" action={<Typography variant="caption">{estimate.items.length} item{estimate.items.length === 1 ? '' : 's'}</Typography>} />
     <div className="grid gap-control">{estimate.items.map((item, itemIndex) => <EstimateItemCard item={item} itemIndex={itemIndex} key={`${item.name}-${itemIndex}`} onFieldChange={onFieldChange} onNutrientChange={onNutrientChange} />)}</div>
     {estimate.assumptions.length > 0 && <details className="my-control-wide rounded-control bg-canvas p-control-wide text-caption text-muted"><summary className="cursor-pointer font-bold text-ink">Assumptions behind this estimate</summary><ul className="mt-control list-disc pl-content leading-relaxed">{estimate.assumptions.map((assumption, index) => <li key={index}>{assumption}</li>)}</ul></details>}

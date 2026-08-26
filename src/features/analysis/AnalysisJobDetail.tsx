@@ -23,7 +23,7 @@ export function AnalysisJobDetail({ job, onDelete, onLog, onOpenDiary, onRefresh
     if (!current) return null
     const items = current.items.map((item, itemIndex) => itemIndex === index ? { ...item, nutrients: { ...item.nutrients, [name]: value } } : item)
     const totals = items.reduce((sum, item) => { for (const key of Object.keys(sum) as Array<keyof Nutrients>) sum[key] += item.nutrients[key]; return sum }, createEmptyNutrients())
-    return { ...current, items, totals }
+    return { ...current, items, totals, calorieBreakdown: name === 'calories' ? undefined : current.calorieBreakdown }
   })
   const runAction = async (name: Exclude<typeof action, null>, task: () => Promise<unknown>) => {
     if (pending.current) return

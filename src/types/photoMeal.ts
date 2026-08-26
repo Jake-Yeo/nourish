@@ -1,4 +1,4 @@
-import type { AiPhotoExplanation, Nutrients } from '../types'
+import type { AiPhotoExplanation, CalorieBreakdown, Nutrients } from '../types'
 
 export type CapturedPhoto = { id: string; dataUrl: string; note: string }
 export type CaptureFoodItem = { id: string; name: string; description: string; photos: CapturedPhoto[] }
@@ -9,12 +9,13 @@ export type MealEstimate = {
   confidence: 'low' | 'medium' | 'high'
   summary: string
   assumptions: string[]
+  calorieBreakdown?: CalorieBreakdown
   researchDisclosure: { internetUsed: boolean; summary: string; sources: ResearchSource[] }
   items: MealEstimateItem[]
   totals: Nutrients
 }
 
-export type MealEstimateExplanation = Pick<AiPhotoExplanation, 'confidence' | 'summary' | 'assumptions'>
+export type MealEstimateExplanation = Pick<AiPhotoExplanation, 'confidence' | 'summary' | 'assumptions' | 'calorieBreakdown'>
 export type PhotoMealStep = 'capture' | 'analyzing' | 'review'
 export type MealAnalysisStatus = 'queued' | 'running' | 'completed' | 'failed' | 'interrupted'
 export type MealAnalysisSource = { items: CaptureFoodItem[]; note: string; mealType: import('../types').MealType; date: string; replacement?: { mealId: string; itemId: string; entryId: string } }

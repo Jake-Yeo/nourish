@@ -22,7 +22,7 @@ async function replaceAnalyzedItem(job: MealAnalysisJob, estimate: MealEstimate)
   if (!replacement || estimate.items.length !== 1) return false
   const item = estimate.items[0]
   const food: Food = { id: `photo-${crypto.randomUUID()}`, name: item.name, brand: `AI estimate · ${estimate.confidence} confidence`, servingLabel: item.portion, servingGrams: 0, nutrients: item.nutrients, source: 'custom' }
-  const entry: DiaryEntry = { id: crypto.randomUUID(), date: job.source.date, meal: job.source.mealType, food, servings: 1, loggedAt: Date.now(), source: 'nourish-photo', aiPhotoExplanation: { confidence: estimate.confidence, summary: estimate.summary, assumptions: estimate.assumptions } }
+  const entry: DiaryEntry = { id: crypto.randomUUID(), date: job.source.date, meal: job.source.mealType, food, servings: 1, loggedAt: Date.now(), source: 'nourish-photo', aiPhotoExplanation: { confidence: estimate.confidence, summary: estimate.summary, assumptions: estimate.assumptions, calorieBreakdown: estimate.calorieBreakdown } }
   const response = await fetch(`/api/photo-meals/${replacement.mealId}/items/${replacement.itemId}/entry`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ entries: [entry], items: [{ ...job.source.items[0], id: replacement.itemId, entryId: entry.id }], mealNote: job.source.note, analysisJobId: job.id }) })
   if (response.ok) window.location.reload()
   return response.ok
@@ -41,7 +41,7 @@ export default function App() {
     if (await commitNutritionMutation({ type: 'updateGoals', goals })) showToast('Nutrition goals saved')
   }
   const saveWeightChangeStartDate = (startDate: string) => commitNutritionMutation({ type: 'updateWeightChangeStartDate', startDate })
-  const logAnalysis = (job: MealAnalysisJob, estimate: MealEstimate) => job.source.replacement ? replaceAnalyzedItem(job, estimate) : diaryMutations.addPhotoEntries(estimate.items.map(item => ({ id: `photo-${crypto.randomUUID()}`, name: item.name, brand: `AI estimate · ${estimate.confidence} confidence`, servingLabel: item.portion, servingGrams: 0, nutrients: item.nutrients, source: 'custom' })), job.source.items, job.source.mealType, { confidence: estimate.confidence, summary: estimate.summary, assumptions: estimate.assumptions }, job.source.note, job.source.date, job.id)
+  const logAnalysis = (job: MealAnalysisJob, estimate: MealEstimate) => job.source.replacement ? replaceAnalyzedItem(job, estimate) : diaryMutations.addPhotoEntries(estimate.items.map(item => ({ id: `photo-${crypto.randomUUID()}`, name: item.name, brand: `AI estimate · ${estimate.confidence} confidence`, servingLabel: item.portion, servingGrams: 0, nutrients: item.nutrients, source: 'custom' })), job.source.items, job.source.mealType, { confidence: estimate.confidence, summary: estimate.summary, assumptions: estimate.assumptions, calorieBreakdown: estimate.calorieBreakdown }, job.source.note, job.source.date, job.id)
   const openAnalysisDiary = (job: MealAnalysisJob) => { navigation.setSelectedDateKey(job.source.date); navigation.navigateToDiary(job.source.mealType) }
 
   return <div className="grid h-dvh min-w-80 overflow-hidden bg-canvas font-sans text-ink antialiased desktop:grid-cols-app-shell">

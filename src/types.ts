@@ -29,10 +29,16 @@ export type Food = {
 
 export type DiaryEntrySource = 'nourish-photo' | 'nourish-manual' | 'nourish-barcode' | 'mynetdiary'
 
+export type CalorieBreakdown = {
+  explanation: string
+  components: Array<{ name: string; portion: string; calories: number; evidence: string }>
+}
+
 export type AiPhotoExplanation = {
   confidence: 'low' | 'medium' | 'high'
   summary: string
   assumptions: string[]
+  calorieBreakdown?: CalorieBreakdown
 }
 
 export type DiaryEntry = {
