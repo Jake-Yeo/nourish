@@ -20,6 +20,11 @@ export const mealEstimateSchema = {
       },
       required: ['explanation', 'components'],
     },
+    calorieCalibration: {
+      type: 'object', additionalProperties: false,
+      properties: { plausibleLow: { type: 'number' }, plausibleHigh: { type: 'number' } },
+      required: ['plausibleLow', 'plausibleHigh'],
+    },
     researchDisclosure: {
       type: 'object', additionalProperties: false,
       properties: { internetUsed: { type: 'boolean' }, summary: { type: 'string', maxLength: 500 }, sources: { type: 'array', maxItems: 12, items: { type: 'object', additionalProperties: false, properties: { title: { type: 'string', maxLength: 200 }, url: { type: 'string', maxLength: 500 } }, required: ['title'] } } },
@@ -35,5 +40,5 @@ export const mealEstimateSchema = {
     },
     totals: nutrientSchema,
   },
-  required: ['mealName', 'confidence', 'summary', 'assumptions', 'calorieBreakdown', 'researchDisclosure', 'items', 'totals'],
+  required: ['mealName', 'confidence', 'summary', 'assumptions', 'calorieBreakdown', 'calorieCalibration', 'researchDisclosure', 'items', 'totals'],
 }

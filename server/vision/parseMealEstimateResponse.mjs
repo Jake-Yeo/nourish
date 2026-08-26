@@ -13,8 +13,16 @@ function validNutrients(value) {
   return exactKeys(value, nutrientNames) && nutrientNames.every(name => Number.isFinite(value[name]) && value[name] >= 0)
 }
 
+function validCalorieCalibration(value, selectedCalories) {
+  if (!exactKeys(value, ['plausibleLow', 'plausibleHigh'])) return false
+  const { plausibleLow, plausibleHigh } = value
+  if (![plausibleLow, plausibleHigh].every(number => Number.isFinite(number) && number >= 0) || plausibleHigh < plausibleLow) return false
+  const slightlyHighCenter = plausibleLow + (plausibleHigh - plausibleLow) * 0.6
+  return caloriesReconcile(selectedCalories, slightlyHighCenter)
+}
+
 export function isMealEstimate(value) {
-  const rootKeys = ['mealName', 'confidence', 'summary', 'assumptions', 'calorieBreakdown', 'researchDisclosure', 'items', 'totals']
+  const rootKeys = ['mealName', 'confidence', 'summary', 'assumptions', 'calorieBreakdown', 'calorieCalibration', 'researchDisclosure', 'items', 'totals']
   const itemKeys = ['name', 'description', 'portion', 'nutrients']
   const componentKeys = ['name', 'portion', 'calories', 'evidence']
   if (!exactKeys(value, rootKeys) || !validText(value.mealName) || !validText(value.summary)) return false
@@ -34,7 +42,7 @@ export function isMealEstimate(value) {
   const componentCalories = value.calorieBreakdown.components.reduce((sum, component) => sum + component.calories, 0)
   return exactKeys(item, itemKeys) && validText(item.name) && validText(item.description) && validText(item.portion)
     && validNutrients(item.nutrients) && validNutrients(value.totals) && caloriesReconcile(componentCalories, item.nutrients.calories)
-    && caloriesReconcile(item.nutrients.calories, value.totals.calories)
+    && caloriesReconcile(item.nutrients.calories, value.totals.calories) && validCalorieCalibration(value.calorieCalibration, item.nutrients.calories)
 }
 
 function sanitizeEstimate(estimate) {
@@ -65,6 +73,7 @@ function sanitizeEstimate(estimate) {
   sanitized.calorieBreakdown.components.forEach(component => required.push(component.name, component.portion, component.evidence))
   sanitized.items.forEach(item => required.push(item.name, item.description, item.portion))
   if (required.some(value => !value)) throw new Error()
+  delete sanitized.calorieCalibration
   return sanitized
 }
 
