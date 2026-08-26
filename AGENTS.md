@@ -29,7 +29,8 @@ Nourish is Jake's private, photo-first nutrition PWA. Its primary workflow is mu
 - Use React, TypeScript, and Tailwind utility classes directly in component `className` values.
 - Define colors, spacing, typography, radii, shadows, breakpoints, and layout measurements as semantic tokens in `tailwind.config.js`. Feature components must not contain raw color or spacing values.
 - Build features from stateless primitives in `src/components/ui`. Every primitive accepts `className` through the shared `cn()` helper backed by `clsx` and `tailwind-merge`; use CVA or a named map for variants.
-- Keep every component, hook, and function focused on one responsibility in its own named file under 100 lines. Do not add descriptive inline comments; use explicit self-documenting names.
+- Keep every component, hook, and function focused on one responsibility. Split files when responsibilities or maintenance boundaries warrant it; do not impose an arbitrary line limit. Prefer explicit self-documenting names over descriptive inline comments.
+- Add or change tests only when they provide useful regression confidence for behavior that is otherwise easy to break.
 - Keep `src/index.css` limited to Tailwind's config/compiler imports. Do not add authored selectors, CSS modules, Sass, styled-components, or `@apply`.
 - Do not add MUI by default. Nourish has a custom consumer UI, and a second design system adds weight and override work without improving the experience.
 - Use the palette, typography, spacing, shape, responsive, and accessibility rules in `STYLE.md`.

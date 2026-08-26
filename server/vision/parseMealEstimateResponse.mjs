@@ -56,6 +56,6 @@ export function parseMealEstimateResponse(output) {
     if (!isMealEstimate(estimate)) throw new Error()
     return sanitizeEstimate(estimate)
   } catch {
-    throw Object.assign(new Error('Hermes returned an invalid nutrition estimate.'), { statusCode: 502 })
+    throw Object.assign(new Error('OpenClaw returned an invalid nutrition estimate.'), { statusCode: 502 })
   }
 }

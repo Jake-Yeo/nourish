@@ -8,7 +8,6 @@ import { promisify } from 'node:util'
 const executeFile = promisify(execFile)
 const executableCandidates = name => [
   ...String(process.env.PATH || '').split(path.delimiter).filter(Boolean).map(folder => path.join(folder, name)),
-  path.join(os.homedir(), '.hermes', 'hermes-agent', 'venv', 'bin', name),
   `/opt/homebrew/bin/${name}`, `/usr/local/bin/${name}`, `/usr/bin/${name}`,
 ]
 
