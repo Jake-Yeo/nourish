@@ -1,4 +1,5 @@
 import { createHash, randomUUID } from 'node:crypto'
+import { runImmediateTransaction } from './runImmediateTransaction.mjs'
 
 export function initializeAnalysisJobSchema(database) {
   database.exec(`
@@ -26,7 +27,7 @@ const hashRequest = request => createHash('sha256').update(JSON.stringify(reques
 
 export function createAnalysisJob(database, request, idempotencyKey) {
   const now = new Date().toISOString(), requestHash = hashRequest(request)
-  const transaction = database.transaction(() => {
+  return runImmediateTransaction(database, () => {
     const existing = database.prepare(`SELECT ${selectColumns},request_hash FROM meal_analysis_jobs WHERE idempotency_key = ?`).get(idempotencyKey)
     if (existing) {
       if (existing.request_hash !== requestHash) throw Object.assign(new Error('That analysis key was already used for different photos or notes.'), { code: 'IDEMPOTENCY_CONFLICT', statusCode: 409 })
@@ -36,7 +37,6 @@ export function createAnalysisJob(database, request, idempotencyKey) {
     database.prepare('INSERT INTO meal_analysis_jobs (id,status,request_json,request_hash,created_at,updated_at,attempt,idempotency_key) VALUES (?,?,?,?,?,?,1,?)').run(job.id, job.status, JSON.stringify(request), requestHash, now, now, idempotencyKey)
     return { job, created: true }
   })
-  return transaction()
 }
 
 export function getAnalysisJob(database, id) { return mapJob(database.prepare(`SELECT ${selectColumns} FROM meal_analysis_jobs WHERE id = ?`).get(id)) }
