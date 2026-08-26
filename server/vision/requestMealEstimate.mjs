@@ -51,7 +51,7 @@ function parseSessionId(stderr) {
   return /^session_id:\s*(\S+)\s*$/m.exec(String(stderr))?.[1] || null
 }
 export function buildHermesArguments(prompt, imagePath, sessionId = null) {
-  const args = ['chat', '-Q', '-q', prompt, '-m', HERMES_MODEL, '--provider', HERMES_PROVIDER, '--reasoning', 'medium', '-t', 'web', '--max-turns', '24', '--source', 'cli']
+  const args = ['chat', '-Q', '-q', prompt, '-m', HERMES_MODEL, '--provider', HERMES_PROVIDER, '--reasoning', 'medium', '--toolsets', 'browser,vision', '--source', 'nourish', '--ignore-rules']
   if (sessionId) args.push('--resume', sessionId, '--no-restore-cwd')
   else args.push('--image', imagePath)
   return args
