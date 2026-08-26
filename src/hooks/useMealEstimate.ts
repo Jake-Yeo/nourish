@@ -22,7 +22,9 @@ export function useMealEstimate() {
       const result = await response.json()
       if (!response.ok) throw new Error(result.error || 'Could not queue analysis.')
       const job = result as MealAnalysisJob
-      attemptKey.current = null; if (!replacement) await clearPhotoDraft(); return job
+      attemptKey.current = null
+      if (!replacement) await clearPhotoDraft().catch(() => undefined)
+      return job
     } catch (error) { setAnalysisError(error instanceof Error ? error.message : 'Could not queue analysis.'); return null }
     finally { pending.current = false; setIsQueuing(false) }
   }
