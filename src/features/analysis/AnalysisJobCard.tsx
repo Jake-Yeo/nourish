@@ -9,7 +9,7 @@ const statusLabels = { queued: 'Queued', running: 'Running', completed: 'Complet
 
 export function AnalysisJobCard({ disabled, isOpening, job, onOpen }: { disabled?: boolean; isOpening?: boolean; job: MealAnalysisJob; onOpen: () => void }) {
   const title = job.result?.mealName || job.source.items.map(item => item.name || 'Photo item').join(', ')
-  const summary = job.loggedAt ? 'Logged to your diary' : job.status === 'completed' ? job.result?.summary || 'Estimate ready to review' : job.error || `Analysis attempt ${job.attempt}`
+  const summary = job.diaryUpdatePending ? 'Updated estimate ready to apply to Diary' : job.loggedAt ? 'Logged to your diary' : job.status === 'completed' ? job.result?.summary || 'Estimate ready to review' : job.error || `Analysis attempt ${job.attempt}`
   const timestamp = new Date(job.updatedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
   return <button disabled={disabled} aria-busy={isOpening || undefined} className="w-full min-w-0 cursor-pointer rounded-card text-left focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-primary/20 disabled:cursor-wait disabled:opacity-70" onClick={onOpen} aria-label={`${isOpening ? 'Opening' : 'Open'} ${title} analysis`}>
     <Card className="grid min-w-0 gap-control transition hover:border-primary hover:shadow-primary" padding="default">

@@ -58,5 +58,18 @@ export function useNourishData(showToast: (message: string) => void) {
     }
   }
 
-  return { nutritionData, commitNutritionMutation, commitPhotoMeal }
+  const commitLoggedPhotoMeal = async (analysisJobId: string, entries: DiaryEntry[], items: CaptureFoodItem[], mealNote: string) => {
+    try {
+      const response = await fetch(`/api/analysis-jobs/${analysisJobId}/diary`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ entries, items: items.map((item, index) => ({ ...item, entryId: entries[index]?.id })), mealNote }) })
+      const result = await response.json()
+      if (!response.ok) throw new Error(result.error || 'Could not update the logged meal.')
+      setNutritionData(result.data)
+      return true
+    } catch (error) {
+      showToast(error instanceof Error ? error.message : 'Could not update the logged meal.')
+      return false
+    }
+  }
+
+  return { nutritionData, commitNutritionMutation, commitPhotoMeal, commitLoggedPhotoMeal }
 }

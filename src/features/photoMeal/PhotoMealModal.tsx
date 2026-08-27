@@ -16,8 +16,8 @@ export function PhotoMealModal({ defaultMealType, initialJob, selectedDateKey, o
     if (job) { onClose(); onQueued(job) }
   }
   return <Modal accessibleLabel="AI meal estimate" onClose={onClose} width="wide">
-    <ModalHeader eyebrow="AI meal estimate" title="Photograph your meal" onClose={onClose} />
-    <PhotoCaptureStep items={capture.items} mealType={capture.mealType} mealNote={capture.mealNote} error={analysis.analysisError || capture.captureError} isAnalyzing={analysis.isQueuing} submitLabel={initialJob ? 'Re-run AI for this item' : undefined} onAddFiles={capture.addPhotoFiles} onAnalyze={queue} onItemChange={capture.updateItem} onMealNoteChange={capture.setMealNote} onMealTypeChange={capture.setMealType} onPhotoDelete={capture.removePhoto} onPhotoNoteChange={capture.updatePhotoNote} />
+    <ModalHeader eyebrow="AI meal estimate" title={initialJob ? 'Add details and re-run' : 'Photograph your meal'} onClose={onClose} />
+    <PhotoCaptureStep items={capture.items} mealType={capture.mealType} mealNote={capture.mealNote} error={analysis.analysisError || capture.captureError} isAnalyzing={analysis.isQueuing} lockItemSet={Boolean(initialJob?.loggedAt)} submitLabel={initialJob ? 'Re-run AI for this item' : undefined} onAddFiles={capture.addPhotoFiles} onAnalyze={queue} onItemChange={capture.updateItem} onMealNoteChange={capture.setMealNote} onMealTypeChange={capture.setMealType} onPhotoDelete={capture.removePhoto} onPhotoNoteChange={capture.updatePhotoNote} />
     {analysis.isQueuing && <p className="mt-control text-center text-caption text-muted" role="status">Saving analysis…</p>}
   </Modal>
 }

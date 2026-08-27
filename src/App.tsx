@@ -32,8 +32,8 @@ export default function App() {
   const { showToast, toastMessage } = useToast()
   const navigation = useNourishNavigation()
   const dialogs = useNourishDialogs()
-  const { commitNutritionMutation, commitPhotoMeal, nutritionData } = useNourishData(showToast)
-  const diaryMutations = useDiaryMutations({ commitNutritionMutation, commitPhotoMeal, selectedDateKey: navigation.selectedDateKey, showToast, closePhotoMeal: dialogs.closePhotoMeal, closeQuickAdd: dialogs.closeQuickAdd })
+  const { commitNutritionMutation, commitPhotoMeal, commitLoggedPhotoMeal, nutritionData } = useNourishData(showToast)
+  const diaryMutations = useDiaryMutations({ commitNutritionMutation, commitPhotoMeal, commitLoggedPhotoMeal, selectedDateKey: navigation.selectedDateKey, showToast, closePhotoMeal: dialogs.closePhotoMeal, closeQuickAdd: dialogs.closeQuickAdd })
   const myNetDiarySync = useMyNetDiarySync(showToast)
   const [queuedAnalysisJob, setQueuedAnalysisJob] = useState<MealAnalysisJob | null>(null)
   const selectedDateEntries = useMemo(() => nutritionData.entries.filter(entry => entry.date === navigation.selectedDateKey), [navigation.selectedDateKey, nutritionData.entries])
@@ -41,7 +41,12 @@ export default function App() {
     if (await commitNutritionMutation({ type: 'updateGoals', goals })) showToast('Nutrition goals saved')
   }
   const saveWeightChangeStartDate = (startDate: string) => commitNutritionMutation({ type: 'updateWeightChangeStartDate', startDate })
-  const logAnalysis = (job: MealAnalysisJob, estimate: MealEstimate) => job.source.replacement ? replaceAnalyzedItem(job, estimate) : diaryMutations.addPhotoEntries(estimate.items.map(item => ({ id: `photo-${crypto.randomUUID()}`, name: item.name, brand: `AI estimate · ${estimate.confidence} confidence`, servingLabel: item.portion, servingGrams: 0, nutrients: item.nutrients, source: 'custom' })), job.source.items, job.source.mealType, { confidence: estimate.confidence, summary: estimate.summary, assumptions: estimate.assumptions, calorieBreakdown: estimate.calorieBreakdown }, job.source.note, job.source.date, job.id)
+  const logAnalysis = (job: MealAnalysisJob, estimate: MealEstimate) => {
+    const foods = estimate.items.map(item => ({ id: `photo-${crypto.randomUUID()}`, name: item.name, brand: `AI estimate · ${estimate.confidence} confidence`, servingLabel: item.portion, servingGrams: 0, nutrients: item.nutrients, source: 'custom' as const }))
+    const explanation = { confidence: estimate.confidence, summary: estimate.summary, assumptions: estimate.assumptions, calorieBreakdown: estimate.calorieBreakdown }
+    if (job.loggedAt) return diaryMutations.updateLoggedPhotoEntries(job.id, foods, job.source.items, job.source.mealType, explanation, job.source.note, job.source.date)
+    return job.source.replacement ? replaceAnalyzedItem(job, estimate) : diaryMutations.addPhotoEntries(foods, job.source.items, job.source.mealType, explanation, job.source.note, job.source.date, job.id)
+  }
   const openAnalysisDiary = (job: MealAnalysisJob) => { navigation.setSelectedDateKey(job.source.date); navigation.navigateToDiary(job.source.mealType) }
 
   return <div className="grid h-dvh min-w-80 overflow-hidden bg-canvas font-sans text-ink antialiased desktop:grid-cols-app-shell">

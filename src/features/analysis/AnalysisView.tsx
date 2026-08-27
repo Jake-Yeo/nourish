@@ -39,7 +39,7 @@ export function AnalysisView({ selectedDateKey, queuedJob, onLog, onOpenDiary, o
   if (selectedJob) return <div className="grid gap-content"><Button variant="secondary" className="w-fit" onClick={() => setSelectedJob(null)}><ChevronLeft className="w-5" />All analyses</Button>{detailError && <Card variant="flat"><Typography className="text-destructive">{detailError}</Typography></Card>}<AnalysisJobDetail job={selectedJob} onDelete={removeJob} onLog={async (job, estimate) => {
     const saved = await onLog(job, estimate)
     if (saved) {
-      setSelectedJob(current => current?.id === job.id ? { ...current, loggedAt: Date.now() } : current)
+      setSelectedJob(current => current?.id === job.id ? { ...current, loggedAt: current.loggedAt ?? Date.now(), diaryUpdatePending: false } : current)
       await refresh()
       try {
         const refreshedJob = await fetchAnalysisJob(job.id)

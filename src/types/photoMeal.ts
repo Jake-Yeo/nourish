@@ -19,4 +19,4 @@ export type MealEstimateExplanation = Pick<AiPhotoExplanation, 'confidence' | 's
 export type PhotoMealStep = 'capture' | 'analyzing' | 'review'
 export type MealAnalysisStatus = 'queued' | 'running' | 'completed' | 'failed' | 'interrupted'
 export type MealAnalysisSource = { items: CaptureFoodItem[]; note: string; mealType: import('../types').MealType; date: string; replacement?: { mealId: string; itemId: string; entryId: string } }
-export type MealAnalysisJob = { id: string; status: MealAnalysisStatus; source: MealAnalysisSource; result: MealEstimate | null; error: string | null; attempt: number; createdAt: number; startedAt: number | null; finishedAt: number | null; updatedAt: number; loggedAt: number | null; loggedMealId: string | null }
+export type MealAnalysisJob = { id: string; status: MealAnalysisStatus; source: MealAnalysisSource; result: MealEstimate | null; error: string | null; attempt: number; createdAt: number; startedAt: number | null; finishedAt: number | null; updatedAt: number; loggedAt: number | null; loggedMealId: string | null; diaryUpdatePending: boolean }

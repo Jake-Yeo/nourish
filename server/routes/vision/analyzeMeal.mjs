@@ -61,8 +61,13 @@ export function retryMealAnalysis(request, response) {
 export function rerunMealAnalysis(request, response) {
   const error = validateRequest(request.body, false)
   if (error) return response.status(error.includes('large') ? 413 : 400).json({ error })
-  const job = rerunAnalysisJob(databaseConnection, request.params.jobId, normalizeSource(request.body))
-  if (!job) return response.status(409).json({ error: 'Only completed, unlogged analyses can be edited and re-run.' })
+  let job
+  try { job = rerunAnalysisJob(databaseConnection, request.params.jobId, normalizeSource(request.body)) }
+  catch (rerunError) {
+    if (rerunError?.code === 'LOGGED_RERUN_SCOPE') return response.status(409).json({ error: rerunError.message })
+    throw rerunError
+  }
+  if (!job) return response.status(409).json({ error: 'Only completed analyses can be edited and re-run.' })
   scheduleAnalysisJob(job.id)
   return response.status(202).json(job)
 }

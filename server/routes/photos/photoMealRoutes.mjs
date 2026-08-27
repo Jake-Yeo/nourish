@@ -3,6 +3,8 @@ import { clearSavedPhotos, getPhotoStorageUsage, getSavedMealForEntry, inTransac
 import { readAppState } from '../../database/readAppState.mjs'
 import { validateItemUpdate, validatePhotoMeal } from './validatePhotoMeal.mjs'
 import { linkAnalysisJobToMeal } from '../../database/analysisJobStore.mjs'
+import { getAnalysisJob } from '../../database/analysisJobStore.mjs'
+import { updateLoggedAnalysisMeal } from '../../database/loggedAnalysisMealStore.mjs'
 
 function writeState(data) { databaseConnection.prepare('UPDATE app_state SET data = ?, revision = revision + 1, updated_at = ? WHERE id = 1').run(JSON.stringify(data), Date.now()) }
 function responseError(response, status, error) { return response.status(status).json({ error }) }
@@ -73,6 +75,16 @@ export function replacePhotoMeal(request, response) {
     })
     response.json({ data, revision: state.revision + 1 })
   } catch { responseError(response, 409, 'Could not replace the linked photo entry.') }
+}
+
+export function applyLoggedAnalysisUpdate(request, response) {
+  const job = getAnalysisJob(databaseConnection, request.params.jobId)
+  if (!job?.loggedMealId) return responseError(response, 409, 'This analysis is not linked to a Diary meal.')
+  const body = { ...request.body, mealId: job.loggedMealId }
+  const error = validatePhotoMeal(body)
+  if (error) return responseError(response, error.includes('large') ? 413 : 400, error)
+  try { response.json(updateLoggedAnalysisMeal(databaseConnection, job.id, body)) }
+  catch (caught) { responseError(response, 409, caught instanceof Error ? caught.message : 'Could not update the logged Diary meal.') }
 }
 
 export function photoStorageUsage(_request, response) { response.json(getPhotoStorageUsage(databaseConnection)) }

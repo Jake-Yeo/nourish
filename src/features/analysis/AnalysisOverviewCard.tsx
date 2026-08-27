@@ -6,7 +6,7 @@ import type { MealAnalysisJob } from '../../types/photoMeal'
 
 export function AnalysisOverviewCard({ jobs }: { jobs: MealAnalysisJob[] }) {
   const activeCount = jobs.filter(job => job.status === 'queued' || job.status === 'running').length
-  const reviewCount = jobs.filter(job => job.status === 'completed' && !job.loggedAt).length
+  const reviewCount = jobs.filter(job => job.status === 'completed' && (!job.loggedAt || job.diaryUpdatePending)).length
   const completedCount = jobs.filter(job => job.status === 'completed').length
   return <Card padding="large" className="overflow-hidden">
     <Badge variant="ai"><Sparkles className="w-4" />Analysis center</Badge>

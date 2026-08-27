@@ -16,7 +16,7 @@ import { interruptMyNetDiarySyncJobs } from './server/database/myNetDiarySyncJob
 import { shutdownMyNetDiarySyncWorker } from './server/mynetdiary/processMyNetDiarySyncJob.mjs'
 import { databaseConnection } from './server/database/databaseConnection.mjs'
 import { askDayQuestion } from './server/routes/vision/askDayQuestion.mjs'
-import { createPhotoMeal, deleteAllPhotos, patchPhotoMeal, photoStorageUsage, readPhotoMeal, replacePhotoMeal } from './server/routes/photos/photoMealRoutes.mjs'
+import { applyLoggedAnalysisUpdate, createPhotoMeal, deleteAllPhotos, patchPhotoMeal, photoStorageUsage, readPhotoMeal, replacePhotoMeal } from './server/routes/photos/photoMealRoutes.mjs'
 
 const application = express()
 application.use(express.json({ limit: '36mb' }))
@@ -33,6 +33,7 @@ application.get('/api/analysis-jobs', analysisJobs)
 application.get('/api/analysis-jobs/:jobId', analysisJob)
 application.post('/api/analysis-jobs/:jobId/retry', retryMealAnalysis)
 application.post('/api/analysis-jobs/:jobId/rerun', rerunMealAnalysis)
+application.put('/api/analysis-jobs/:jobId/diary', applyLoggedAnalysisUpdate)
 application.delete('/api/analysis-jobs/:jobId', deleteMealAnalysis)
 application.post('/api/photo-meals', createPhotoMeal)
 application.get('/api/photo-meals/storage', photoStorageUsage)

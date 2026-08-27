@@ -7,9 +7,9 @@ import { Input } from '../../components/ui/Input'
 import { TextArea } from '../../components/ui/TextArea'
 import { CapturedPhotoGrid } from './CapturedPhotoGrid'
 
-type Props = { item: CaptureFoodItem; number: number; onAddFiles: (files: FileList | null, itemId: string) => void; onDelete: (id: string) => void; onNoteChange: (id: string, note: string) => void; onUpdate: (id: string, field: 'name' | 'description', value: string) => void }
+type Props = { item: CaptureFoodItem; number: number; preserveItem?: boolean; onAddFiles: (files: FileList | null, itemId: string) => void; onDelete: (id: string) => void; onNoteChange: (id: string, note: string) => void; onUpdate: (id: string, field: 'name' | 'description', value: string) => void }
 
-export function CaptureFoodItemCard({ item, number, onAddFiles, onDelete, onNoteChange, onUpdate }: Props) {
+export function CaptureFoodItemCard({ item, number, onAddFiles, onDelete, onNoteChange, onUpdate, preserveItem }: Props) {
   const cameraInput = useRef<HTMLInputElement>(null)
   const libraryInput = useRef<HTMLInputElement>(null)
   const handleFiles = (input: HTMLInputElement) => { onAddFiles(input.files, item.id); input.value = '' }
@@ -17,7 +17,7 @@ export function CaptureFoodItemCard({ item, number, onAddFiles, onDelete, onNote
     <strong className="text-detail">Food item {number}</strong>
     <Field label="Name" optional><Input value={item.name} onChange={event => onUpdate(item.id, 'name', event.target.value)} placeholder="AI can suggest this" /></Field>
     <Field label="Description / photo notes" optional><TextArea value={item.description} onChange={event => onUpdate(item.id, 'description', event.target.value)} placeholder="Portion, ingredients, preparation, or what you ate" /></Field>
-    <CapturedPhotoGrid photos={item.photos} hideAddControls onChooseFromLibrary={() => undefined} onTakePhoto={() => undefined} onDelete={onDelete} onNoteChange={onNoteChange} />
+    <CapturedPhotoGrid photos={item.photos} canDelete={!preserveItem || item.photos.length > 1} hideAddControls onChooseFromLibrary={() => undefined} onTakePhoto={() => undefined} onDelete={onDelete} onNoteChange={onNoteChange} />
     <div className="grid gap-control rounded-control bg-primary-soft p-control-wide">
       <strong className="text-detail text-ink">Add another angle</strong>
       <div className="grid gap-control compact:grid-cols-2">
