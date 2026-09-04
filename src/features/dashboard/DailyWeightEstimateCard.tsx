@@ -3,7 +3,8 @@ import { Card } from '../../components/ui/Card'
 import { Typography } from '../../components/ui/Typography'
 import type { DiaryEntry, Goals } from '../../types'
 import { getTodayDateKey } from '../../lib/dates/getTodayDateKey'
-import { getTotalWeightEstimate, getDailyWeightEstimate } from './getDailyWeightEstimate'
+import { getDailyWeightEstimate } from './getDailyWeightEstimate'
+import { getTotalWeightEstimate } from '../insights/getTotalWeightEstimate'
 import { getDefaultWeightChangeRange } from '../insights/weightChangeDates'
 
 type DailyWeightEstimateCardProps = { dateKey: string; entries: DiaryEntry[]; allEntries: DiaryEntry[]; goals: Goals; weightChangeStartDate?: string }
