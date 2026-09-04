@@ -32,9 +32,9 @@ export default function App() {
   const { showToast, toastMessage } = useToast()
   const navigation = useNourishNavigation()
   const dialogs = useNourishDialogs()
-  const { commitNutritionMutation, commitPhotoMeal, commitLoggedPhotoMeal, nutritionData } = useNourishData(showToast)
+  const { commitNutritionMutation, commitPhotoMeal, commitLoggedPhotoMeal, nutritionData, refreshNutritionData } = useNourishData(showToast)
   const diaryMutations = useDiaryMutations({ commitNutritionMutation, commitPhotoMeal, commitLoggedPhotoMeal, selectedDateKey: navigation.selectedDateKey, showToast, closePhotoMeal: dialogs.closePhotoMeal, closeQuickAdd: dialogs.closeQuickAdd })
-  const myNetDiarySync = useMyNetDiarySync(showToast)
+  const myNetDiarySync = useMyNetDiarySync(showToast, refreshNutritionData)
   const [queuedAnalysisJob, setQueuedAnalysisJob] = useState<MealAnalysisJob | null>(null)
   const selectedDateEntries = useMemo(() => nutritionData.entries.filter(entry => entry.date === navigation.selectedDateKey), [navigation.selectedDateKey, nutritionData.entries])
   const saveNutritionGoals = async (goals: typeof nutritionData.goals) => {

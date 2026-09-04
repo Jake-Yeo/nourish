@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { bootstrapNutritionData } from '../services/nutritionData/bootstrapNutritionData'
 import type { DataMutation } from '../services/nutritionData/DataMutation'
 import { fetchNutritionData } from '../services/nutritionData/fetchNutritionData'
@@ -9,27 +9,41 @@ import type { CaptureFoodItem } from '../types/photoMeal'
 
 export function useNourishData(showToast: (message: string) => void) {
   const [nutritionData, setNutritionData] = useState<AppData>(loadCachedNutritionData)
+  const isMounted = useRef(true)
+  const refreshRequestId = useRef(0)
+  const refreshNutritionData = useCallback(async () => {
+    refreshRequestId.current += 1
+    const remoteData = await fetchNutritionData()
+    if (isMounted.current) setNutritionData(remoteData)
+    return remoteData
+  }, [])
 
   useEffect(() => {
     let shouldUpdateState = true
-    const refreshNutritionData = () => fetchNutritionData().then(remoteData => {
-      if (shouldUpdateState) setNutritionData(remoteData)
-    }).catch(() => undefined)
-    const refreshWhenVisible = () => { if (document.visibilityState === 'visible') void refreshNutritionData() }
+    isMounted.current = true
+    const refreshInBackground = () => {
+      const requestId = ++refreshRequestId.current
+      return fetchNutritionData().then(remoteData => {
+        if (shouldUpdateState && requestId === refreshRequestId.current) setNutritionData(remoteData)
+      }).catch(() => undefined)
+    }
+    const refreshWhenVisible = () => { if (document.visibilityState === 'visible') void refreshInBackground() }
+    const bootstrapRequestId = ++refreshRequestId.current
 
     bootstrapNutritionData().then(remoteData => {
-      if (shouldUpdateState) setNutritionData(remoteData)
+      if (shouldUpdateState && bootstrapRequestId === refreshRequestId.current) setNutritionData(remoteData)
     }).catch(error => {
       if (shouldUpdateState) showToast(error instanceof Error ? error.message : 'Could not load Nourish data.')
     })
 
-    const refreshInterval = window.setInterval(refreshNutritionData, 10_000)
-    window.addEventListener('focus', refreshNutritionData)
+    const refreshInterval = window.setInterval(refreshInBackground, 10_000)
+    window.addEventListener('focus', refreshInBackground)
     document.addEventListener('visibilitychange', refreshWhenVisible)
     return () => {
       shouldUpdateState = false
+      isMounted.current = false
       window.clearInterval(refreshInterval)
-      window.removeEventListener('focus', refreshNutritionData)
+      window.removeEventListener('focus', refreshInBackground)
       document.removeEventListener('visibilitychange', refreshWhenVisible)
     }
   }, [showToast])
@@ -71,5 +85,5 @@ export function useNourishData(showToast: (message: string) => void) {
     }
   }
 
-  return { nutritionData, commitNutritionMutation, commitPhotoMeal, commitLoggedPhotoMeal }
+  return { nutritionData, refreshNutritionData, commitNutritionMutation, commitPhotoMeal, commitLoggedPhotoMeal }
 }
